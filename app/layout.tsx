@@ -14,21 +14,77 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased min-h-screen flex flex-col bg-canvas text-text">
-        <header className="bg-brand-strong text-white p-4">
-          <div className="container mx-auto flex items-center justify-between">
-            <h1 className="text-xl font-bold">Aster Market</h1>
-            <nav>
-              <ul className="flex space-x-4">
-                <li>Search</li>
-                <li>Cart</li>
-                <li>Account</li>
-              </ul>
-            </nav>
+        {/* Primary Header */}
+        <header className="bg-brand-strong text-white">
+          <div className="flex items-center px-4 py-2 space-x-6">
+            {/* Logo */}
+            <div className="flex-shrink-0">
+              <h1 className="text-2xl font-bold tracking-tight">Aster Market</h1>
+            </div>
+
+            {/* Delivery Context */}
+            <div className="hidden md:flex flex-col text-sm hover:outline hover:outline-1 hover:outline-white p-1 cursor-pointer">
+              <span className="text-gray-300 text-xs leading-tight">Deliver to</span>
+              <span className="font-bold leading-tight">Select your address</span>
+            </div>
+
+            {/* Search Bar */}
+            <div className="flex-grow flex items-center bg-white rounded-md overflow-hidden">
+              <select className="bg-gray-100 text-black text-sm p-2 border-r border-gray-300 outline-none cursor-pointer hidden sm:block">
+                <option>All</option>
+              </select>
+              <input 
+                type="text" 
+                placeholder="Search Aster Market" 
+                className="flex-grow text-black px-3 py-2 outline-none"
+              />
+              <button className="bg-accent hover:bg-accent-hover px-4 py-2 text-black font-bold">
+                Q
+              </button>
+            </div>
+
+            {/* Account & Lists */}
+            <div className="hidden sm:flex flex-col text-sm hover:outline hover:outline-1 hover:outline-white p-1 cursor-pointer whitespace-nowrap">
+              <span className="text-gray-300 text-xs leading-tight">Hello, sign in</span>
+              <span className="font-bold leading-tight">Account & Lists</span>
+            </div>
+
+            {/* Returns & Orders */}
+            <div className="hidden lg:flex flex-col text-sm hover:outline hover:outline-1 hover:outline-white p-1 cursor-pointer whitespace-nowrap">
+              <span className="text-gray-300 text-xs leading-tight">Returns</span>
+              <span className="font-bold leading-tight">& Orders</span>
+            </div>
+
+            {/* Cart */}
+            <div className="flex items-center hover:outline hover:outline-1 hover:outline-white p-1 cursor-pointer">
+              <div className="text-3xl font-bold leading-none mr-1">🛒</div>
+              <span className="font-bold mt-2">Cart</span>
+              <span className="absolute ml-3 top-2 text-accent font-bold text-lg">0</span>
+            </div>
           </div>
         </header>
-        <main className="flex-grow container mx-auto p-4">{children}</main>
-        <footer className="bg-surface p-4 text-center mt-8">
-          <p>&copy; 2026 Aster Market</p>
+
+        {/* Secondary Nav */}
+        <nav className="bg-brand text-white px-4 py-1 flex items-center space-x-4 text-sm font-medium">
+          <button className="hover:outline hover:outline-1 hover:outline-white p-1 flex items-center">
+            <span className="font-bold mr-1">☰</span> All
+          </button>
+          <a href="#" className="hover:outline hover:outline-1 hover:outline-white p-1">Today&apos;s Deals</a>
+          <a href="#" className="hover:outline hover:outline-1 hover:outline-white p-1">Customer Service</a>
+          <a href="#" className="hover:outline hover:outline-1 hover:outline-white p-1">Registry</a>
+          <a href="#" className="hover:outline hover:outline-1 hover:outline-white p-1">Gift Cards</a>
+          <a href="#" className="hover:outline hover:outline-1 hover:outline-white p-1">Sell</a>
+        </nav>
+
+        <main className="flex-grow">{children}</main>
+        
+        <footer className="bg-brand-strong text-white py-8 text-center mt-auto">
+          <div className="flex justify-center space-x-8 text-sm mb-4">
+            <a href="#" className="hover:underline">Conditions of Use</a>
+            <a href="#" className="hover:underline">Privacy Notice</a>
+            <a href="#" className="hover:underline">Consumer Health Data Privacy Disclosure</a>
+          </div>
+          <p className="text-sm text-gray-400">&copy; 2026 Aster Market, Inc. or its affiliates</p>
         </footer>
       </body>
     </html>
