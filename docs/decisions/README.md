@@ -22,5 +22,6 @@ Accepted does not mean permanent. When a decision changes, add a new record and 
 | 004 | Trial Vercel with directly owned Neon PostgreSQL | Trial |
 | 005 | Use Neon Auth for P0 identity | Trial |
 | 006 | Use Neon Object Storage for runtime-managed files | Accepted; provisioning deferred |
+| 007 | Use simulated checkout without a payment provider | Accepted |
 
 Copy `000-template.md` for new records. Keep records short and evidence-oriented.

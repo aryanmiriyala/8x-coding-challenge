@@ -20,7 +20,7 @@ Railway is the fallback because it can host Next.js and PostgreSQL together with
 - Prisma connects through Neon pooling for application traffic and a direct URL for migrations; transaction/inventory spikes pass.
 - Preview deployments receive isolated database branches and cannot mutate public-demo data.
 - Migrations run through one controlled step and application rollback remains possible.
-- Neon Auth URLs/cookies/trusted domains, Stripe sandbox webhooks, health checks, regions, and cost controls behave as documented.
+- Neon Auth URLs/cookies/trusted domains, health checks, regions, and cost controls behave as documented. Checkout has no provider webhook (ADR-007).
 
 ## Consequences
 
