@@ -29,11 +29,11 @@ This checklist makes hidden setup work visible before product code begins. It is
 - [ ] Confirm the project is in an Auth-supported AWS region and does not combine Managed Auth with incompatible IP Allow or Private Networking settings.
 - [ ] Link the repository to the intended Neon project/branch without printing or committing credentials.
 - [ ] Pull/store `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, and `NEON_AUTH_BASE_URL` in ignored local or Vercel-managed environment storage.
-- [ ] Generate a distinct `NEON_AUTH_COOKIE_SECRET` for each deployed environment; never commit the populated value.
+- [x] Generate a 256-bit `NEON_AUTH_COOKIE_SECRET` in the ignored local environment; still generate a distinct value for each deployed environment and never commit one.
 - [ ] Treat `NEON_DATA_API_URL` as optional provider configuration; decide on a concrete Data API use case and row-level security model before calling it from a browser.
 - [ ] Confirm pooled application and direct migration URLs address the same branch.
 - [ ] Register the exact preview/public-demo origins with Neon Auth; keep login, recovery, callback, `/api/auth`, and static assets outside protected-route matchers.
-- [ ] Decide whether local commerce integration tests use local PostgreSQL while focused auth tests use a Neon dev branch, then encode that split in test scripts.
+- [x] Use an isolated Neon development branch for local commerce and Managed Auth; automated tests use disposable branches. Encode this in test scripts when implementation begins.
 - [ ] Validate Managed Auth sign-up, verification, sign-in, sign-out, recovery, session restoration, and direct protected-operation denial.
 - [ ] Validate the managed-schema relationship strategy before adding app-owned foreign keys to `neon_auth.user`.
 
@@ -51,7 +51,7 @@ This checklist makes hidden setup work visible before product code begins. It is
 - [ ] Executable configuration rejects live Stripe keys and live-mode events.
 - [ ] Use Neon-managed auth email during development. Configure custom SMTP before any production-like auth release.
 - [ ] Defer Resend or another application-mail provider until an order/customer message actually exists.
-- [ ] Keep seeded catalog imagery in app static assets for the first slice. If an active slice adds runtime-managed files, Neon Object Storage is the preferred candidate; check region, access mode, CDN, cost, and branch isolation before provisioning.
+- [ ] Keep seeded catalog imagery in app static assets for the first slice. If an active slice adds runtime-managed files, use the selected Neon Object Storage; check region, access mode, CDN, cost, and branch isolation before provisioning.
 - [ ] Before using the sample `assets` S3 bucket, confirm it exists on the branch named by the storage endpoint and has the intended access level; S3 credentials alone are insufficient.
 - [ ] Do not create Redis, queues, search services, analytics platforms, or Neon Functions unless an active slice demonstrates the need.
 

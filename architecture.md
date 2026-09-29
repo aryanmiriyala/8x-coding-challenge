@@ -37,7 +37,7 @@ Next.js application
    +------ Email provider (verification/recovery)
 ```
 
-That is the initial topology. Seeded catalog images ship as approved static assets on Vercel. If a later slice needs runtime-managed images or other files, Neon Object Storage is the preferred S3-compatible file store because its bucket state branches with the database. Do not provision it until that use case is active. PostgreSQL handles the small catalog's search. Framework/host logging is sufficient initially. No Redis, queue, event bus, separate search service, or telemetry cluster is part of the first build.
+That is the initial topology. Seeded catalog images ship as approved static assets on Vercel. If a later slice needs runtime-managed images or other files, Neon Object Storage is the selected S3-compatible file store because its bucket state branches with the database. Do not provision it until that use case is active. PostgreSQL handles the small catalog's search. Framework/host logging is sufficient initially. No Redis, queue, event bus, separate search service, or telemetry cluster is part of the first build.
 
 ## 2. Working stack hypotheses
 
@@ -51,7 +51,7 @@ That is the initial topology. Seeded catalog images ship as approved static asse
 | Database | PostgreSQL | High because commerce transactions and constraints are central |
 | ORM/migrations | Prisma ORM 8 | Medium; run a locking/migration spike before committing inventory logic |
 | Authentication | Neon Auth (Managed Better Auth) via `@neondatabase/auth` | Trial; enabled by the owner, then verify Next.js proxy, email/password lifecycle, branch isolation, and protected operations in Slice 0 |
-| Runtime file storage | Neon Object Storage (S3-compatible) if runtime uploads/generated files become active; app `public/` for seeded static assets | Proposed; defer bucket provisioning until an active use case; verify project region, access mode, CDN needs, and cost then |
+| Runtime file storage | Neon Object Storage (S3-compatible) when runtime uploads/generated files become active; app `public/` for seeded static assets | Selected; defer bucket provisioning until an active use case; verify project region, access mode, CDN needs, and cost then |
 | Payments | Stripe Checkout Sessions in test mode | High for provider; hosted versus embedded remains an experiment |
 | Rate limiting | Auth-library/host capability or a simple application mechanism | Medium; use the lightest option that fits the actual preview topology; no Redis by default |
 | Email | Neon-managed auth email; provider adapter later for order messages | Medium for auth; custom SMTP is required before a production-like auth release, while Resend remains optional for application mail |
@@ -386,9 +386,9 @@ Email can be sent directly through the provider for the clone, with user-visible
 The detailed living release plan is in `docs/deployment-strategy.md`. Provider choice remains reversible, but environment isolation, controlled migrations, validated secrets, health checks, and rollback evidence are requirements.
 
 ```text
-local     -> local PostgreSQL, Stripe test or deterministic fake, captured email
-preview   -> isolated database/namespace, Stripe test, non-delivering email domain
-public demo-> managed PostgreSQL, Stripe test, provider secrets, host logs
+local     -> isolated Neon development branch, deterministic payment fake, captured email
+preview   -> isolated Neon branch, Stripe test, non-delivering email domain
+public demo-> managed Neon branch, Stripe test, provider secrets, host logs
 ```
 
 Deployment order:

@@ -15,8 +15,8 @@ Account ownership, credential scope, environment-variable placement, and rotatio
 
 | Environment | Purpose | Data and providers |
 | --- | --- | --- |
-| Local | Development and fast verification | Local PostgreSQL for commerce; dedicated Neon dev branch for focused Managed Auth flows; deterministic Stripe fake; captured application email |
-| Test | Automated integration/E2E runs | Isolated disposable commerce database, deterministic providers, and branch-isolated real-auth tests where the auth contract is under test |
+| Local | Development and fast verification | Isolated Neon development branch for commerce and Managed Auth; deterministic Stripe fake; captured application email |
+| Test | Automated integration/E2E runs | Isolated disposable Neon branch, deterministic providers, and branch-isolated real-auth tests where the auth contract is under test |
 | Preview | Shared review before public release | Isolated Neon database/Auth branch, Stripe test mode, controlled auth/application email configuration |
 | Public demo | Challenge demonstration | Managed PostgreSQL, Stripe test mode, provider secrets, approved seed data, host logs |
 
