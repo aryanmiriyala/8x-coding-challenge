@@ -1,12 +1,12 @@
 # Project Status
 
 Last updated: 2026-09-29
-Phase: **Discovery**
-Overall state: **Active; no implementation authorized yet**
+Phase: **Slice planning (Slice 0: Executable Foundation)**
+Overall state: **Discovery complete; Slice 0 authorized; actual code paused for final plan alignment**
 
 ## Current objective
 
-Produce a reviewable, flexible discovery package for an Amazon-inspired commerce clone, then select the smallest end-to-end slice that tests the highest-value architectural assumptions.
+Complete discovery closure, finalize the Slice 0 plan and verified stack matrix, then execute the Slice 0 foundation walking skeleton in tiny verifiable commits once unpaused.
 
 ## Confirmed product boundary
 
@@ -57,21 +57,25 @@ The local `vercel-dev` provider baseline and Vercel environment targeting are no
 | Q-007 | Final brand and image licensing strategy? | Visual lock/seed | Original brand plus generated/licensed product images |
 | Q-008 | Do product images need runtime/admin uploads in the first release? | Image-management slice | Static app assets for the initial catalog; Neon Object Storage is selected when uploads/generated files become active |
 
-## Next flexible checkpoint
+## Next flexible checkpoint: Slice 0 Foundation
 
-Review `intent.md`, `spec.md`, `architecture.md`, and `docs/pre-build-readiness.md` together. Then either:
-
-1. revise scope/assumptions;
-2. run one or more time-boxed technical spikes; or
-3. approve Slice 0/1 planning without freezing later slices.
-
-## How to advance phase
-
-Update this file to `Slice planning` only after the next slice has:
-
-- a named user outcome;
-- linked requirement and use-case IDs;
-- acceptance examples and failure paths;
-- known risks and required decisions;
-- a verification approach;
-- no unresolved safety or authority blocker.
+Slice 0 candidate scope and gates are defined:
+- **Outcome:** Minimal walking skeleton that builds, runs, tests, and verifies Neon database connectivity on `vercel-dev` without product breadth.
+- **Linked requirements:** `TECH-FOUNDATION-01` (env validation, health check, Prisma schema, Vitest), `NAV-01` (minimal accessible header shell).
+- **Verified Stack Matrix:**
+  - Runtime: Node.js `v22.21.0` LTS, npm `11.6.2`
+  - Framework: Next.js 16 (`16.3.7`) App Router + React 19 (`19.3.0`) + Strict TypeScript
+  - Styling: Tailwind CSS
+  - ORM: Prisma 6 (`6.19.3`) using direct connection for migrations, pooled for queries
+  - Auth provider: Neon Auth (Managed Better Auth) via `@neondatabase/auth` (`0.5.0-beta`)
+  - Testing: Vitest
+- **Planned Verification:**
+  - `npm run lint` && `npm run typecheck` && `npm test`
+  - `/api/health` returns `200` with database status `ok`
+  - Isolated Vercel preview builds without error
+- **First Commit Boundaries:**
+  1. Base package.json, TypeScript config, ESLint, Prettier, Vitest configuration
+  2. Environment validation module (`lib/env.ts`)
+  3. Health check route handler (`app/api/health/route.ts`) + integration test
+  4. Minimal root layout, Tailwind styling, and header shell
+  5. Prisma schema init targeting Neon `vercel-dev` with direct migration check

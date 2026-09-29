@@ -9,11 +9,11 @@ This checklist makes hidden setup work visible before product code begins. It is
 
 ## Required before scaffolding
 
-- [ ] The owner has reviewed `intent.md`, `spec.md`, and `architecture.md` and explicitly authorized Slice 0.
-- [ ] The first slice has a named outcome, linked requirement/use-case IDs, failure cases, and verification evidence.
+- [x] The owner has reviewed `intent.md`, `spec.md`, and `architecture.md` and explicitly authorized Slice 0.
+- [x] The first slice has a named outcome, linked requirement/use-case IDs, failure cases, and verification evidence (defined in `docs/delivery-plan.md` and Slice 0 plan).
 - [ ] The repository baseline is committed and pushed in small, single-purpose commits; the worktree contains no accidental secret or unrelated staged file.
-- [ ] Node/package-manager versions and the Next.js/React/Auth/ORM compatibility matrix are checked against current primary documentation.
-- [ ] Package versions will be pinned in the lockfile; no generated scaffold is accepted before its scripts and defaults are reviewed.
+- [x] Node/package-manager versions and the Next.js/React/Auth/ORM compatibility matrix are checked against current primary documentation (Node v22.21.0, npm 11.6.2, Next.js 16, React 19, Prisma 6.19.3, `@neondatabase/auth` 0.5.0-beta).
+- [x] Package versions will be pinned in the lockfile; no generated scaffold is accepted before its scripts and defaults are reviewed.
 
 ## Repository and delivery controls
 
@@ -21,12 +21,12 @@ This checklist makes hidden setup work visible before product code begins. It is
 - [ ] CI design includes format/lint, strict types, unit tests, database integration tests, build, and a secret scan; implementation may add these incrementally with the first code that needs them.
 - [ ] Commit scope follows `AGENTS.md`: one observable addition or decision, its focused verification, and matching docs.
 - [ ] Generated files, dependency changes, formatting-only changes, and behavior changes are separated when that separation improves reviewability.
-- [ ] The untracked/ignored baseline is understood before the first code commit.
+- [x] The untracked/ignored baseline is understood before the first code commit (`.neon` ignored, `.agent-logs/` preserved untracked).
 
 ## Neon database and Auth
 
 - [x] The owner enabled Neon Auth on the selected Neon project.
-- [ ] Confirm the project is in an Auth-supported AWS region and does not combine Managed Auth with incompatible IP Allow or Private Networking settings.
+- [x] Confirm the project is in an Auth-supported AWS region (`aws-us-east-2`) and does not combine Managed Auth with incompatible IP Allow or Private Networking settings (`ip-allow` checked; empty list).
 - [x] Choose/create an isolated development branch on the existing Neon Free project. `vercel-dev` now exists and Vercel Development database URLs target it.
 - [x] Link local tooling/env to the isolated development branch without overwriting committed files. The ignored local env now targets `vercel-dev`.
 - [x] Pull/store `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, and `NEON_AUTH_BASE_URL` in ignored local environment storage for `vercel-dev`.
@@ -43,20 +43,20 @@ This checklist makes hidden setup work visible before product code begins. It is
 - [x] GitHub `main` is linked to the existing Vercel Hobby project, verified from deployment metadata. The current deployments fail because no app scaffold exists; no healthy deployment is claimed.
 - [x] Connect the Vercel Hobby project to the existing Neon-owned Free project enough for database env injection; do not provision a second Vercel-managed Neon resource.
 - [x] Confirm Neon-injected variable names and branch targets by inspection. Local env and Vercel Development/Production envs are branch-targeted; app runtime smoke still waits for a scaffold.
-- [ ] Define Local, Test, Preview, and Public Demo environment boundaries; Preview and Demo must not share data, auth sessions, or secrets.
+- [x] Define Local, Test, Preview, and Public Demo environment boundaries; Preview and Demo must not share data, auth sessions, or secrets (defined in `docs/deployment-strategy.md`).
 - [ ] Confirm Node/Next.js runtime, database pooling, build output, secure cookies, trusted origins, health checks, logs, rollback, and spending controls in a minimal preview.
 - [ ] Establish one controlled migration step using the direct URL; do not run migrations concurrently at application startup.
 - [ ] Keep Railway as a bounded fallback only if the Vercel/Neon trial fails recorded criteria.
 
 ## Provider safety
 
-- [ ] Keep P0 checkout server-side and simulated. No payment account, SDK, key, webhook, or card form is needed; test atomic order/stock/cart behavior and visibly label no-money orders.
-- [ ] Use Neon-managed auth email during development. Configure custom SMTP before any production-like auth release.
-- [ ] Defer Resend or another application-mail provider until an order/customer message actually exists.
-- [ ] Keep seeded catalog imagery in app static assets for the first slice. If an active slice adds runtime-managed files, use the selected Neon Object Storage; check region, access mode, CDN, cost, and branch isolation before provisioning.
+- [x] Keep P0 checkout server-side and simulated. No payment account, SDK, key, webhook, or card form is needed; test atomic order/stock/cart behavior and visibly label no-money orders (ADR-007).
+- [x] Use Neon-managed auth email during development. Configure custom SMTP before any production-like auth release.
+- [x] Defer Resend or another application-mail provider until an order/customer message actually exists.
+- [x] Keep seeded catalog imagery in app static assets for the first slice. If an active slice adds runtime-managed files, use the selected Neon Object Storage; check region, access mode, CDN, cost, and branch isolation before provisioning.
 - [x] Create minimal Neon Object Storage buckets on the intended project branches: `catalog-assets` is `public_read`, and `private-uploads` is `private` on both `production` and `vercel-dev`.
-- [x] Before using Object Storage locally, confirm storage envs target the same branch as the database and run an upload/read/delete smoke test against the active branch. Vercel storage env refresh remains open before deployment.
-- [ ] Do not create Redis, queues, search services, analytics platforms, or Neon Functions unless an active slice demonstrates the need.
+- [x] Before using Object Storage locally, confirm storage envs target the same branch as the database and run an upload/read/delete smoke test against the active branch. Vercel storage env refresh is complete.
+- [x] Do not create Redis, queues, search services, analytics platforms, or Neon Functions unless an active slice demonstrates the need.
 
 ## Data, assets, and UX evidence
 
