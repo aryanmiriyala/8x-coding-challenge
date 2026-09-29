@@ -19,10 +19,10 @@ Rule: Never place credentials in Git, documentation, screenshots, logs, fixtures
 | Service | Needed when | Notes |
 | --- | --- | --- |
 | Custom SMTP and/or application email provider | Production-like auth email or order email becomes active | Neon shared SMTP is sufficient for development auth codes. Configure custom SMTP before a production-like auth release; add Resend or another provider only for application-owned messages when needed |
-| Neon Object Storage | Runtime-managed catalog images, generated assets, or user uploads become an active use case | Preferred S3-compatible store for this Neon-backed app because buckets and objects branch with PostgreSQL. Declare only required buckets through `neon.ts`; credentials are injected by Neon per branch |
+| Neon Object Storage | Runtime-managed catalog images, generated assets, or user uploads become an active use case | Selected S3-compatible store for this Neon-backed app because buckets and objects branch with PostgreSQL. Declare only required buckets through `neon.ts`; credentials are injected by Neon per branch |
 | Domain registrar/DNS | We want branded public URLs and real email delivery | A `vercel.app` URL is sufficient for early previews; a controlled domain is useful before public auth email |
 
-No separate hosted identity account is required: Neon Auth is Managed Better Auth. No hosted account is required for Prisma, Tailwind CSS, Zod, Vitest, Playwright, axe, or local PostgreSQL.
+No separate hosted identity account is required: Neon Auth is Managed Better Auth. No hosted account is required for Prisma, Tailwind CSS, Zod, Vitest, Playwright, or axe.
 
 ## Human access
 
@@ -74,7 +74,8 @@ Tracked test configuration contains fake values only. Real sandbox credentials n
 ### Local development
 
 - Use `.env.local` only for developer-specific sandbox values and ensure it is ignored before adding any value.
-- Prefer local PostgreSQL, captured application email, and deterministic provider fakes for normal commerce development. Focused auth tests use a dedicated Neon development branch because managed auth is branch-scoped.
+- Use one isolated Neon development branch for local commerce and Managed Auth; use disposable branches for integration tests. Keep application email captured and other provider calls deterministic by default.
+- `node scripts/configure-local-neon.mjs` maps the supplied pooled Neon connection into `DATABASE_URL`, derives the matching direct URL for `DATABASE_URL_UNPOOLED`, and fills only blank app-managed secrets with independent 256-bit random values. It does not generate provider-issued database, storage, or payment credentials and never prints values. Confirm the branch before running it.
 - Use Stripe CLI/test credentials only for the focused webhook/integration checks that need them.
 - Do not paste secrets into agent prompts or terminal commands that will echo them into logs.
 
@@ -101,7 +102,7 @@ Names are hypotheses until the scaffold establishes the executable environment s
 | `DATABASE_URL` | Yes | Local/test/preview/demo | Pooled PostgreSQL connection; unique per environment |
 | `DATABASE_URL_UNPOOLED` | Yes | Local/test/preview/demo | Direct PostgreSQL connection for migrations, dumps, and admin tasks; same branch as pooled URL |
 | `NEON_AUTH_BASE_URL` | No | Auth test/preview/demo | Branch Managed Auth URL including its path; supplied by Neon |
-| `NEON_AUTH_COOKIE_SECRET` | Yes | Auth test/preview/demo | 32+ character Next.js cached-session cookie secret; unique per environment and not injected by Neon |
+| `NEON_AUTH_COOKIE_SECRET` | Yes | Auth test/preview/demo | 32 random bytes (256 bits) for cached-session cookies; unique per environment and not injected by Neon |
 | `NEON_DATA_API_URL` | No | Only if the Data API is enabled | Branch Data API endpoint; optional and unused by the P0 server-side data path |
 | `AWS_ACCESS_KEY_ID` | Yes | Local/preview/demo only when Neon Object Storage is provisioned | Branch-scoped Neon S3 credential; generated/injected by Neon, keep in ignored local or managed environment storage |
 | `AWS_SECRET_ACCESS_KEY` | Yes | Local/preview/demo only when Neon Object Storage is provisioned | Branch-scoped Neon S3 secret; generated/injected by Neon, never commit or expose to browser code |
@@ -112,7 +113,7 @@ Names are hypotheses until the scaffold establishes the executable environment s
 | `STRIPE_WEBHOOK_SECRET` | Yes | Focused local/preview/demo | Separate signing secret per webhook endpoint/environment |
 | `RESEND_API_KEY` | Yes | Preview/demo only when application email is active | Optional sending-only/domain-restricted key; not needed for Neon Auth email |
 | `EMAIL_FROM` | No | Preview/demo when application email is active | Verified sender identity; demo-safe value |
-| `CRON_SECRET` | Yes | Demo if scheduled cleanup exists | Protects the reservation-cleanup route |
+| `CRON_SECRET` | Yes | If scheduled cleanup exists | Independent 32-random-byte (256-bit) secret protecting the reservation-cleanup route; generated locally now but dormant until the route exists |
 | `APP_BASE_URL` | No | All | Canonical links and redirects; must match trusted origin policy |
 
 Stripe-hosted Checkout does not require a browser publishable key for the initial redirect flow. Add one only if the selected Stripe presentation actually uses client-side Stripe components.
