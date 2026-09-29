@@ -25,6 +25,7 @@ blob-report/
 
 # Deployment provider state
 .vercel/
+.neon
 
 # Database dumps and local database files
 *.dump
