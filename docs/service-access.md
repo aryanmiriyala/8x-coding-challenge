@@ -44,10 +44,10 @@ Prefer this order:
 For this clone:
 
 - GitHub connects to Vercel directly; CI should not need a personal Vercel token for normal deployments.
-- The Neon/Vercel integration supplies environment-specific database/Auth configuration and creates isolated preview branches.
+- The Neon/Vercel integration currently supplies environment-specific database configuration and creates an isolated Development database branch. Branch-specific Auth configuration still needs to be enabled and exposed before auth work starts.
 - Use the existing Neon-owned Free project through the existing-account/Connected Accounts integration in the personal Vercel Hobby scope. Do not choose the flow that provisions a new Vercel-managed Neon account or resource. Verify the exact Vercel scope and Neon project before linking; never rely on CLI defaults.
 - Application queries use pooled `DATABASE_URL`; migrations and administrative tasks use direct `DATABASE_URL_UNPOOLED`. Both must target the same branch. A Neon management API key is unnecessary unless we automate branch lifecycle outside the integration; if later needed, use a project-scoped key.
-- Neon Auth supplies each branch's `NEON_AUTH_BASE_URL`. The application supplies a unique `NEON_AUTH_COOKIE_SECRET`; trusted preview/demo origins are registered in Neon.
+- Neon Auth supplies each branch's `NEON_AUTH_BASE_URL` once Auth is configured on that branch. The application supplies a unique `NEON_AUTH_COOKIE_SECRET`; trusted preview/demo origins are registered in Neon.
 - An available `NEON_DATA_API_URL` is provider configuration, not a requirement for the P0 Next.js server path. Do not add browser database access without an explicit use case and tested row-level security policies.
 - Neon Object Storage credentials alone do not create a bucket. Before using an `assets` bucket, confirm it exists on the branch targeted by `AWS_ENDPOINT_URL_S3` and choose `private` or `public_read` based on the files it will hold.
 - No AWS account or AWS S3 bucket is part of this architecture. The `AWS_*` names are Neon-provided S3 protocol conventions. Storage clients must explicitly use the Neon branch endpoint and Neon-issued credentials, with no fallback to the AWS S3 default endpoint; executable configuration should reject a non-Neon storage endpoint when this integration becomes active.

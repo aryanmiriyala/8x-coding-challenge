@@ -27,21 +27,22 @@ This checklist makes hidden setup work visible before product code begins. It is
 
 - [x] The owner enabled Neon Auth on the selected Neon project.
 - [ ] Confirm the project is in an Auth-supported AWS region and does not combine Managed Auth with incompatible IP Allow or Private Networking settings.
-- [ ] Choose/create an isolated development branch on the existing Neon Free project; link local tooling to that branch without overwriting secrets. The current local URLs target `production` and must not be used for dev writes.
+- [x] Choose/create an isolated development branch on the existing Neon Free project. `vercel-dev` now exists and Vercel Development database URLs target it.
+- [ ] Link local tooling/env to the isolated development branch without overwriting secrets. The current local URLs still target `production` and must not be used for dev writes.
 - [ ] Pull/store `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, and `NEON_AUTH_BASE_URL` in ignored local or Vercel-managed environment storage.
 - [x] Generate a 256-bit `NEON_AUTH_COOKIE_SECRET` in the ignored local environment; still generate a distinct value for each deployed environment and never commit one.
 - [ ] Treat `NEON_DATA_API_URL` as optional provider configuration; decide on a concrete Data API use case and row-level security model before calling it from a browser.
 - [x] Confirm pooled application and direct migration URLs address the same branch; current local URLs match the existing `production` endpoint, not an isolated development branch.
 - [ ] Register the exact preview/public-demo origins with Neon Auth; keep login, recovery, callback, `/api/auth`, and static assets outside protected-route matchers.
-- [ ] Establish an isolated Neon development branch for local commerce and Managed Auth; automated tests use disposable branches. Encode this in test scripts when implementation begins.
+- [ ] Establish an isolated Neon development branch for local commerce and Managed Auth. The database branch exists; Managed Auth is not configured for `vercel-dev` yet. Automated tests use disposable branches. Encode this in test scripts when implementation begins.
 - [ ] Validate Managed Auth sign-up, verification, sign-in, sign-out, recovery, session restoration, and direct protected-operation denial.
 - [ ] Validate the managed-schema relationship strategy before adding app-owned foreign keys to `neon_auth.user`.
 
 ## Vercel and runtime
 
 - [x] GitHub `main` is linked to the existing Vercel Hobby project, verified from deployment metadata. The current deployments fail because no app scaffold exists; no healthy deployment is claimed.
-- [ ] Connect that Hobby project to the existing Neon-owned Free project through the existing-account integration; do not provision a Vercel-managed Neon resource.
-- [ ] Confirm Neon-injected variable names and branch targets by inspection; the project currently has no environment variables or marketplace installation.
+- [x] Connect the Vercel Hobby project to the existing Neon-owned Free project enough for database env injection; do not provision a second Vercel-managed Neon resource.
+- [ ] Confirm Neon-injected variable names and branch targets by inspection. Database variables are verified; Auth/storage variables are still missing from Vercel envs.
 - [ ] Define Local, Test, Preview, and Public Demo environment boundaries; Preview and Demo must not share data, auth sessions, or secrets.
 - [ ] Confirm Node/Next.js runtime, database pooling, build output, secure cookies, trusted origins, health checks, logs, rollback, and spending controls in a minimal preview.
 - [ ] Establish one controlled migration step using the direct URL; do not run migrations concurrently at application startup.
