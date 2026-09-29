@@ -32,11 +32,12 @@ Next.js application
    |     Stripe test payments | email
    |
    +------ PostgreSQL (source of truth)
+   +------ Neon Object Storage (deferred; runtime-managed files only)
    +------ Stripe test mode (payment UI + events)
    +------ Email provider (verification/recovery)
 ```
 
-That is the entire baseline topology. Product images ship as approved static assets. PostgreSQL handles the small catalog's search. Framework/host logging is sufficient initially. No Redis, queue, event bus, separate search service, object-storage upload pipeline, or telemetry cluster is part of the first build.
+That is the initial topology. Seeded catalog images ship as approved static assets on Vercel. If a later slice needs runtime-managed images or other files, Neon Object Storage is the preferred S3-compatible file store because its bucket state branches with the database. Do not provision it until that use case is active. PostgreSQL handles the small catalog's search. Framework/host logging is sufficient initially. No Redis, queue, event bus, separate search service, or telemetry cluster is part of the first build.
 
 ## 2. Working stack hypotheses
 
@@ -50,6 +51,7 @@ That is the entire baseline topology. Product images ship as approved static ass
 | Database | PostgreSQL | High because commerce transactions and constraints are central |
 | ORM/migrations | Prisma ORM 8 | Medium; run a locking/migration spike before committing inventory logic |
 | Authentication | Neon Auth (Managed Better Auth) via `@neondatabase/auth` | Trial; enabled by the owner, then verify Next.js proxy, email/password lifecycle, branch isolation, and protected operations in Slice 0 |
+| Runtime file storage | Neon Object Storage (S3-compatible) if runtime uploads/generated files become active; app `public/` for seeded static assets | Proposed; defer bucket provisioning until an active use case; verify project region, access mode, CDN needs, and cost then |
 | Payments | Stripe Checkout Sessions in test mode | High for provider; hosted versus embedded remains an experiment |
 | Rate limiting | Auth-library/host capability or a simple application mechanism | Medium; use the lightest option that fits the actual preview topology; no Redis by default |
 | Email | Neon-managed auth email; provider adapter later for order messages | Medium for auth; custom SMTP is required before a production-like auth release, while Resend remains optional for application mail |
@@ -322,7 +324,7 @@ The storefront and confirmation surfaces must visibly say that checkout is a dem
 - Security headers: HSTS in production, `nosniff`, strict referrer policy, restrictive permissions policy, and `frame-ancestors`/frame protection.
 - Same-origin checks for custom mutations; safe CORS default is no cross-origin access.
 - Rate limits by route risk. Search uses a higher burst than auth/checkout/admin.
-- File uploads are P2; when added, inspect MIME/content, size-limit, randomize keys, and serve from a separate origin.
+- Runtime uploads are deferred; when added, prefer Neon Object Storage for branch isolation, inspect MIME/content, enforce size limits, randomize immutable keys, and authorize access on the server. Never expose branch S3 credentials to browsers.
 
 ### Data
 
@@ -347,6 +349,8 @@ The storefront and confirmation surfaces must visibly say that checkout is a dem
 | Search results | Server render; URL-driven; optional short anonymous cache for common queries |
 | Cart/account/orders/admin | Private dynamic response; never shared-cache |
 | Static images/assets | CDN with content hashes and long immutable cache |
+| Neon Object Storage public media, if adopted | Public-read bucket plus CDN; versioned object keys and explicit cache metadata |
+| Private uploaded files, if adopted | Private bucket; authorize before issuing short-lived presigned URLs |
 
 Catalog mutations invalidate affected product/category tags. Never cache authorization decisions or user-specific DTOs in a shared cache.
 
@@ -414,7 +418,7 @@ No product slice begins until its intent, examples, risks, and verification are 
 
 ## 18. Deliberate infrastructure non-goals
 
-The first build will not contain microservices, a message broker, event bus, search cluster, distributed cache, multi-region database, ML recommendations, upload processing, live tax/carrier integrations, seller payouts, or production payment mode. If the project later becomes a real commerce business, those needs should be designed from evidence in a new phase rather than preloaded into the clone.
+The first build will not contain microservices, a message broker, event bus, search cluster, distributed cache, multi-region database, ML recommendations, upload processing, live tax/carrier integrations, seller payouts, or production payment mode. Static product images remain in the application assets until runtime image management is part of an active slice. If it becomes necessary, Neon Object Storage is the preferred first option and is governed by ADR-006. If the project later becomes a real commerce business, additional needs should be designed from evidence in a new phase rather than preloaded into the clone.
 
 ## 19. Referenced implementation guidance
 

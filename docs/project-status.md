@@ -19,6 +19,7 @@ Build one Amazon.com-style physical-goods retail storefront. Separate Amazon bus
 - Lightweight environment, migration, deployment, rollback, and post-release verification strategy.
 - Concrete service-account/secret placement, minimal HTTP/use-case contracts, and P0 relational schema/transaction design.
 - A flexible pre-build readiness gate covering repository, Neon Auth/database, Vercel, CI, seed/assets, and technical-spike evidence.
+- A deferred file-storage direction: keep seed imagery static for now; prefer Neon Object Storage if runtime-managed assets become active.
 - Public visual-reference links and a manual authenticated-flow capture matrix.
 
 ## Known evidence gap
@@ -36,6 +37,7 @@ An interactive browser session was unavailable, so fresh screenshots and signed-
 | Q-005 | Stripe hosted or embedded Checkout? | Checkout slice | Hosted for speed/security; embedded if visual fidelity is a scored criterion |
 | Q-006 | Deployment, database, and email providers? | Slice 0 preview/application email | Trial Vercel + directly owned Neon integration; Neon handles auth email; defer application email provider |
 | Q-007 | Final brand and image licensing strategy? | Visual lock/seed | Original brand plus generated/licensed product images |
+| Q-008 | Do product images need runtime/admin uploads in the first release? | Image-management slice | Static app assets for the initial catalog; Neon Object Storage if a demonstrated slice needs uploads/generated files |
 
 ## Next flexible checkpoint
 
