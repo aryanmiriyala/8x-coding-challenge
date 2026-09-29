@@ -34,8 +34,8 @@ export default async function RootLayout({
     <html lang="en" className={cn("font-sans", geist.variable)}>
       <body className="antialiased min-h-screen flex flex-col bg-canvas text-text">
         {/* Primary Header */}
-        <header className="bg-brand-strong text-white">
-          <div className="flex items-center px-4 py-2 space-x-6">
+        <header className="bg-brand-strong text-white w-full">
+          <div className="flex items-center px-4 md:px-8 xl:px-12 py-2 space-x-6 max-w-[1600px] mx-auto w-full">
             {/* Logo */}
             <div className="flex-shrink-0">
               <a href="/">
@@ -50,16 +50,16 @@ export default async function RootLayout({
             </div>
 
             {/* Search Bar */}
-            <div className="flex-grow flex items-center bg-white rounded-md overflow-hidden">
-              <select className="bg-gray-100 text-black text-sm p-2 border-r border-gray-300 outline-none cursor-pointer hidden sm:block">
+            <div className="flex-grow flex items-center bg-white rounded-md overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-accent">
+              <select className="bg-gray-100 text-black text-sm p-2 border-r border-gray-300 outline-none cursor-pointer hidden sm:block h-10 hover:bg-gray-200">
                 <option>All</option>
               </select>
               <input 
                 type="text" 
                 placeholder="Search Aster Market" 
-                className="flex-grow text-black px-3 py-2 outline-none"
+                className="flex-grow text-black px-3 py-2 outline-none h-10"
               />
-              <button className="bg-accent hover:bg-accent-hover px-4 py-2 text-black font-bold">
+              <button className="bg-accent hover:bg-accent-hover px-4 py-2 h-10 text-black font-bold transition-colors">
                 Q
               </button>
             </div>
@@ -86,15 +86,17 @@ export default async function RootLayout({
         </header>
 
         {/* Secondary Nav */}
-        <nav className="bg-brand text-white px-4 py-1 flex items-center space-x-4 text-sm font-medium">
-          <button className="hover:outline hover:outline-1 hover:outline-white p-1 flex items-center">
-            <span className="font-bold mr-1">☰</span> All
-          </button>
-          <a href="#" className="hover:outline hover:outline-1 hover:outline-white p-1">Today&apos;s Deals</a>
-          <a href="#" className="hover:outline hover:outline-1 hover:outline-white p-1">Customer Service</a>
-          <a href="#" className="hover:outline hover:outline-1 hover:outline-white p-1">Registry</a>
-          <a href="#" className="hover:outline hover:outline-1 hover:outline-white p-1">Gift Cards</a>
-          <a href="#" className="hover:outline hover:outline-1 hover:outline-white p-1">Sell</a>
+        <nav className="bg-brand text-white w-full">
+          <div className="flex items-center px-4 md:px-8 xl:px-12 py-1 space-x-4 max-w-[1600px] mx-auto w-full text-sm font-medium">
+            <button className="hover:outline hover:outline-1 hover:outline-white p-1 flex items-center">
+              <span className="font-bold mr-1">☰</span> All
+            </button>
+            <a href="#" className="hover:outline hover:outline-1 hover:outline-white p-1">Today&apos;s Deals</a>
+            <a href="#" className="hover:outline hover:outline-1 hover:outline-white p-1">Customer Service</a>
+            <a href="#" className="hover:outline hover:outline-1 hover:outline-white p-1">Registry</a>
+            <a href="#" className="hover:outline hover:outline-1 hover:outline-white p-1">Gift Cards</a>
+            <a href="#" className="hover:outline hover:outline-1 hover:outline-white p-1">Sell</a>
+          </div>
         </nav>
 
         <main className="flex-grow">{children}</main>
