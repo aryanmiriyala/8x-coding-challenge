@@ -39,8 +39,9 @@ This checklist makes hidden setup work visible before product code begins. It is
 
 ## Vercel and runtime
 
-- [x] Owner reports GitHub linked to the existing Vercel Hobby project and a deployment exists; inspect the exact project/deployment configuration before treating this as verified.
+- [x] GitHub `main` is linked to the existing Vercel Hobby project, verified from deployment metadata. The current deployments fail because no app scaffold exists; no healthy deployment is claimed.
 - [ ] Connect that Hobby project to the existing Neon-owned Free project through the existing-account integration; do not provision a Vercel-managed Neon resource.
+- [ ] Confirm Neon-injected variable names and branch targets by inspection; the project currently has no environment variables or marketplace installation.
 - [ ] Define Local, Test, Preview, and Public Demo environment boundaries; Preview and Demo must not share data, auth sessions, or secrets.
 - [ ] Confirm Node/Next.js runtime, database pooling, build output, secure cookies, trusted origins, health checks, logs, rollback, and spending controls in a minimal preview.
 - [ ] Establish one controlled migration step using the direct URL; do not run migrations concurrently at application startup.

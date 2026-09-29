@@ -28,13 +28,17 @@ Build one Amazon.com-style physical-goods retail storefront. Separate Amazon bus
 - `NEON_DATA_API_URL` was not saved in the file at inspection, so a blank optional slot was added. P0 does not require the Data API.
 - A read-only S3 bucket listing using the configured Neon endpoint and credentials succeeded but returned zero buckets. The sample `assets` bucket does not yet exist on that endpoint/branch; uploads cannot succeed until it is created.
 - No application scaffold or storage SDK dependency has been added. Runtime-managed files remain deferred until an active slice needs them.
-- Neon and Vercel CLIs are installed and authenticated. Read-only checks found the owner's personal Vercel Hobby scope and its `8x-coding-challenge` project, and the existing Neon Free project `8x-amazon-clone`. The owner reports GitHub is already linked and the Vercel project deployed; that deployment and its environment variables have not yet been independently inspected. No Neon-to-Vercel integration was changed in this check.
+- Neon and Vercel CLIs are installed and authenticated. Read-only checks identified the owner's personal Vercel Hobby scope and its `8x-coding-challenge` project, and the existing Neon Free project `8x-amazon-clone`. Vercel deployment metadata verifies the GitHub `main` link, but both recorded production deployments are in `ERROR`: the build detects no Next.js version because the repository intentionally has no application scaffold yet. The Vercel project has zero environment variables and the Hobby scope has no marketplace integration installation. Neon is **not yet connected to Vercel**; a deployed project entry is not a healthy application.
 - The local pooled database hostname matches the existing Neon project's only endpoint, which is attached to its default `production` branch. There is no isolated development branch yet. Do not run local migrations, seeds, integration tests, or test writes using the current `.env.local` connection. Create or choose an isolated branch and replace local branch-scoped URLs before implementation.
+- Read-only integration checks passed for pooled/direct URL agreement, a Neon database diagnostic on `production`, Neon Auth enabled status and JWKS HTTP 200, active optional Data API status, and Neon Object Storage credential/endpoint bucket listing. Storage currently contains zero buckets, so object upload has not been tested. No database mutation, Auth user creation, bucket creation, or Vercel configuration change was made.
+- The exact smoke matrix, limitations, and next gate are recorded in `docs/neon-integration-smoke.md`.
 - The owner chose simulated, no-money checkout. Stripe is out of P0 entirely (ADR-007); no Stripe account, key, SDK, or webhook is required. P0 payment contracts now specify one atomic demo-order transaction.
 
 ## Known evidence gap
 
 An interactive browser session was unavailable, so fresh screenshots and signed-in end-to-end Amazon flows were not captured. Public pages and official documentation were used instead. Authenticated visual validation remains an explicit pre-visual-lock task and must use a dedicated test identity; do not enter real payment details.
+
+The Neon-to-Vercel integration and a healthy deployed application are still unproven. Connect the **existing Neon-owned project** to the verified Hobby Vercel project through Neon's existing-account integration, establish isolated development/preview branches, and inspect injected variable names/branch targets without exposing values. A healthy app deployment requires a separately authorized application skeleton; GitHub linkage alone cannot pass the smoke gate.
 
 ## Active questions
 
