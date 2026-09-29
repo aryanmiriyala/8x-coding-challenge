@@ -2,7 +2,9 @@
   "name": "aster-market",
   "version": "0.1.0",
   "private": true,
-  "engines": {
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },  "engines": {
     "node": ">=22.21.0"
   },
   "scripts": {
@@ -26,12 +28,14 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "autoprefixer": "^10.4.19",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "16.3.7",
     "postcss": "^8.4.38",
     "prettier": "3.3.3",
     "prisma": "6.19.3",
     "tailwindcss": "^3.4.3",
+    "tsx": "^4.23.15",
     "typescript": "5.6.2",
     "vitest": "2.1.1"
   }
