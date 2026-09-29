@@ -1,16 +1,30 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { getCartItemCount, mergeGuestCart } from '@/lib/actions/cart';
+import { auth } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 export const metadata: Metadata = {
   title: 'Aster Market',
   description: 'A physical-goods storefront',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { data: session } = await auth.getSession();
+  
+  const cookieStore = await cookies();
+  const guestToken = cookieStore.get('aster_guest_cart')?.value;
+  
+  if (session?.user && guestToken) {
+    await mergeGuestCart(session.user.id);
+  }
+
+  const cartCount = await getCartItemCount();
+
   return (
     <html lang="en">
       <body className="antialiased min-h-screen flex flex-col bg-canvas text-text">
@@ -19,7 +33,9 @@ export default function RootLayout({
           <div className="flex items-center px-4 py-2 space-x-6">
             {/* Logo */}
             <div className="flex-shrink-0">
-              <h1 className="text-2xl font-bold tracking-tight">Aster Market</h1>
+              <a href="/">
+                <h1 className="text-2xl font-bold tracking-tight">Aster Market</h1>
+              </a>
             </div>
 
             {/* Delivery Context */}
@@ -44,10 +60,10 @@ export default function RootLayout({
             </div>
 
             {/* Account & Lists */}
-            <div className="hidden sm:flex flex-col text-sm hover:outline hover:outline-1 hover:outline-white p-1 cursor-pointer whitespace-nowrap">
-              <span className="text-gray-300 text-xs leading-tight">Hello, sign in</span>
+            <a href={session?.user ? "/account" : "/auth/sign-in"} className="hidden sm:flex flex-col text-sm hover:outline hover:outline-1 hover:outline-white p-1 cursor-pointer whitespace-nowrap">
+              <span className="text-gray-300 text-xs leading-tight">Hello, {session?.user?.name ? session.user.name.split(' ')[0] : 'sign in'}</span>
               <span className="font-bold leading-tight">Account & Lists</span>
-            </div>
+            </a>
 
             {/* Returns & Orders */}
             <div className="hidden lg:flex flex-col text-sm hover:outline hover:outline-1 hover:outline-white p-1 cursor-pointer whitespace-nowrap">
@@ -56,11 +72,11 @@ export default function RootLayout({
             </div>
 
             {/* Cart */}
-            <div className="flex items-center hover:outline hover:outline-1 hover:outline-white p-1 cursor-pointer">
+            <a href="/cart" className="flex items-center hover:outline hover:outline-1 hover:outline-white p-1 cursor-pointer relative">
               <div className="text-3xl font-bold leading-none mr-1">🛒</div>
               <span className="font-bold mt-2">Cart</span>
-              <span className="absolute ml-3 top-2 text-accent font-bold text-lg">0</span>
-            </div>
+              <span className="absolute left-4 top-1 text-accent font-bold text-lg">{cartCount}</span>
+            </a>
           </div>
         </header>
 

@@ -165,12 +165,25 @@ export default async function ProductPage({ params }: PageProps) {
                 )}
 
                 <div className="space-y-2 mb-4">
-                  <button className="w-full bg-[#ffd814] hover:bg-[#f7ca00] text-black rounded-full py-2 px-4 text-sm font-medium shadow-sm transition-colors disabled:opacity-50" disabled={!isAvailable}>
-                    Add to Cart
-                  </button>
-                  <button className="w-full bg-[#ffa41c] hover:bg-[#fa8900] text-black rounded-full py-2 px-4 text-sm font-medium shadow-sm transition-colors disabled:opacity-50" disabled={!isAvailable}>
-                    Buy Now
-                  </button>
+                  <form action={async () => {
+                    'use server';
+                    const { addToCart } = await import('@/lib/actions/cart');
+                    await addToCart(activeOffer.id, 1);
+                  }}>
+                    <button type="submit" className="w-full bg-[#ffd814] hover:bg-[#f7ca00] text-black rounded-full py-2 px-4 text-sm font-medium shadow-sm transition-colors disabled:opacity-50" disabled={!isAvailable}>
+                      Add to Cart
+                    </button>
+                  </form>
+                  <form action={async () => {
+                    'use server';
+                    const { addToCart } = await import('@/lib/actions/cart');
+                    await addToCart(activeOffer.id, 1);
+                    // Redirect to cart or checkout logic can go here later
+                  }}>
+                    <button type="submit" className="w-full bg-[#ffa41c] hover:bg-[#fa8900] text-black rounded-full py-2 px-4 text-sm font-medium shadow-sm transition-colors disabled:opacity-50" disabled={!isAvailable}>
+                      Buy Now
+                    </button>
+                  </form>
                 </div>
 
                 <div className="text-xs grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-gray-500 mb-4">
