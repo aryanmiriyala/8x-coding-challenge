@@ -26,9 +26,10 @@ Current provider evidence:
 - Neon branches: production and vercel-dev.
 - Vercel Development database envs target vercel-dev. Vercel Production database envs target production.
 - Neon Auth is configured on production, but not yet on vercel-dev.
-- Local .env.local still targets production and is not safe for development writes.
+- Local .env.local still targets production and is not safe for development writes. It has a Data API URL value, but it appears to use the Auth host rather than the `apirest` Data API host, so do not use it until corrected.
 - Vercel envs currently include database URLs only; Auth base URL, app-managed cookie secret, and storage envs are not complete.
-- Neon Object Storage credentials can list buckets on the configured local endpoint, but there are zero buckets and the endpoint currently targets production.
+- Neon Object Storage buckets exist on production and vercel-dev: catalog-assets is public_read; private-uploads is private. Local storage env still targets production, and object upload/read/delete has not been tested.
+- No Resend key is needed for P0. Keep application-owned email in capture mode unless a later slice explicitly chooses a provider.
 
 First task for the implementation chat:
 1. Confirm I explicitly authorize moving from Discovery to Slice planning/implementation.
@@ -38,7 +39,7 @@ First task for the implementation chat:
    - Configure or verify Neon Auth for the branch used by local/preview auth.
    - Retarget local ignored env values away from production before any write.
    - Add distinct 256-bit NEON_AUTH_COOKIE_SECRET values to each runtime environment.
-   - Leave storage deferred unless the first slice needs runtime files.
+   - Leave storage object writes deferred unless the first slice needs runtime files; if active, make local/Vercel storage env branch-specific and test upload/read/delete.
 4. Identify requirement/use-case IDs, examples, failure paths, verification commands, and first commit boundaries before scaffolding.
 5. Then scaffold the smallest Next.js skeleton that proves runtime/build, env validation, health/readiness, and Neon connectivity without adding product breadth.
 ```

@@ -79,7 +79,7 @@ Pull-request previews are useful but optional. They must not automatically mutat
 
 - Neon Auth handles verification/recovery delivery. Shared SMTP is development-only; configure custom SMTP before any production-like auth release.
 - P0 has no payment-provider webhook or credential. The browser confirmation URL never proves order placement; it reads committed owned state.
-- Preview email uses a safe testing/non-delivering configuration; public-demo email sends only to controlled demo identities unless explicitly reviewed.
+- Preview email uses a safe testing/non-delivering configuration. Do not add Resend or another application-mail provider until an order/customer-message slice actively needs it; public-demo email sends only to controlled demo identities unless explicitly reviewed.
 - P0 checkout needs no scheduled work. Add a protected scheduled route only for a later active use case that demonstrates the need.
 
 ## Health and smoke verification

@@ -54,7 +54,8 @@ This checklist makes hidden setup work visible before product code begins. It is
 - [ ] Use Neon-managed auth email during development. Configure custom SMTP before any production-like auth release.
 - [ ] Defer Resend or another application-mail provider until an order/customer message actually exists.
 - [ ] Keep seeded catalog imagery in app static assets for the first slice. If an active slice adds runtime-managed files, use the selected Neon Object Storage; check region, access mode, CDN, cost, and branch isolation before provisioning.
-- [ ] Before using the sample `assets` S3 bucket, confirm it exists on the branch named by the storage endpoint and has the intended access level; S3 credentials alone are insufficient.
+- [x] Create minimal Neon Object Storage buckets on the intended project branches: `catalog-assets` is `public_read`, and `private-uploads` is `private` on both `production` and `vercel-dev`.
+- [ ] Before using Object Storage from the app, confirm local/Vercel storage envs target the same branch as the database and run an upload/read/delete smoke test against the active branch.
 - [ ] Do not create Redis, queues, search services, analytics platforms, or Neon Functions unless an active slice demonstrates the need.
 
 ## Data, assets, and UX evidence

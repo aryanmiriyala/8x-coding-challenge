@@ -18,7 +18,7 @@ Rule: Never place credentials in Git, documentation, screenshots, logs, fixtures
 | Service | Needed when | Notes |
 | --- | --- | --- |
 | Payment provider | Not needed for P0 | Simulated checkout uses only the application database; any provider requires a later decision |
-| Custom SMTP and/or application email provider | Production-like auth email or order email becomes active | Neon shared SMTP is sufficient for development auth codes. Configure custom SMTP before a production-like auth release; add Resend or another provider only for application-owned messages when needed |
+| Custom SMTP and/or application email provider | Production-like auth email or order email becomes active | Neon shared SMTP is sufficient for development auth codes. Configure custom SMTP before a production-like auth release; choose Resend or another provider only when application-owned messages become an active slice |
 | Neon Object Storage | Runtime-managed catalog images, generated assets, or user uploads become an active use case | Selected S3-compatible store for this Neon-backed app because buckets and objects branch with PostgreSQL. Declare only required buckets through `neon.ts`; credentials are injected by Neon per branch |
 | Domain registrar/DNS | We want branded public URLs and real email delivery | A `vercel.app` URL is sufficient for early previews; a controlled domain is useful before public auth email |
 
@@ -49,11 +49,11 @@ For this clone:
 - Application queries use pooled `DATABASE_URL`; migrations and administrative tasks use direct `DATABASE_URL_UNPOOLED`. Both must target the same branch. A Neon management API key is unnecessary unless we automate branch lifecycle outside the integration; if later needed, use a project-scoped key.
 - Neon Auth supplies each branch's `NEON_AUTH_BASE_URL` once Auth is configured on that branch. The application supplies a unique `NEON_AUTH_COOKIE_SECRET`; trusted preview/demo origins are registered in Neon.
 - An available `NEON_DATA_API_URL` is provider configuration, not a requirement for the P0 Next.js server path. Do not add browser database access without an explicit use case and tested row-level security policies.
-- Neon Object Storage credentials alone do not create a bucket. Before using an `assets` bucket, confirm it exists on the branch targeted by `AWS_ENDPOINT_URL_S3` and choose `private` or `public_read` based on the files it will hold.
+- Neon Object Storage credentials alone do not create a bucket. The verified bucket set is `catalog-assets` (`public_read`) for catalog/merchandising media and `private-uploads` (`private`) for source/generated/admin files or future moderation queues. Before using either bucket from the app, confirm the storage endpoint targets the same branch as the database and run an upload/read/delete smoke test.
 - No AWS account or AWS S3 bucket is part of this architecture. The `AWS_*` names are Neon-provided S3 protocol conventions. Storage clients must explicitly use the Neon branch endpoint and Neon-issued credentials, with no fallback to the AWS S3 default endpoint; executable configuration should reject a non-Neon storage endpoint when this integration becomes active.
 - Next.js loads `.env.local` itself. A standalone Node script must load that file explicitly (for example, `node --env-file=.env.local script.mjs`); plain `dotenv/config` defaults to `.env`. Treat presigned object URLs as bearer credentials and do not print them to application or CI logs.
 - No payment-provider account, key, SDK, or webhook is required for P0 (ADR-007).
-- Custom SMTP or a later application email provider uses a sending-only, domain-restricted credential when enabled.
+- Custom SMTP or a later application email provider uses a sending-only, domain-restricted credential when enabled. No Resend account or key is required for P0.
 - Coding agents do not receive dashboard passwords, recovery codes, broad personal tokens, or live-payment credentials.
 
 ## Secret storage model
@@ -109,12 +109,13 @@ Names are hypotheses until the scaffold establishes the executable environment s
 | `AWS_SECRET_ACCESS_KEY` | Yes | Local/preview/demo only when Neon Object Storage is provisioned | Branch-scoped Neon S3 secret; generated/injected by Neon, never commit or expose to browser code |
 | `AWS_ENDPOINT_URL_S3` | No | Local/preview/demo only when Neon Object Storage is provisioned | Branch-specific S3 endpoint supplied by Neon; the S3 client must use path-style addressing |
 | `AWS_REGION` | No | Local/preview/demo only when Neon Object Storage is provisioned | Region supplied by Neon; verify the project's region supports Object Storage |
-| `RESEND_API_KEY` | Yes | Preview/demo only when application email is active | Optional sending-only/domain-restricted key; not needed for Neon Auth email |
+| `NEON_PUBLIC_ASSETS_BUCKET` | No | Local/preview/demo when catalog media uses Neon Object Storage | Public-read bucket name; current value is `catalog-assets` |
+| `NEON_PRIVATE_UPLOADS_BUCKET` | No | Local/preview/demo when private uploads use Neon Object Storage | Private bucket name; current value is `private-uploads` |
 | `EMAIL_FROM` | No | Preview/demo when application email is active | Verified sender identity; demo-safe value |
 | `CRON_SECRET` | Yes | Only if a later active slice adds scheduled work | Independent 32-random-byte (256-bit) secret; a previously generated local value is dormant and P0 checkout needs no cron route |
 | `APP_BASE_URL` | No | All | Canonical links and redirects; must match trusted origin policy |
 
-P0 has no `PAYMENT_MODE`, Stripe variables, or client-side payment configuration in the committed environment contract. Legacy ignored local values, if any, are not used by the planned application.
+P0 has no `PAYMENT_MODE`, Stripe variables, Resend key, or client-side payment configuration in the committed environment contract. Legacy ignored local values, if any, are not used by the planned application.
 
 ## Rotation and incident procedure
 
@@ -150,4 +151,3 @@ If a value enters Git or chat, treat it as compromised immediately. Revoke/rotat
 - [Neon Auth production checklist](https://neon.com/docs/auth/production-checklist)
 - [Neon Object Storage](https://neon.com/docs/storage/overview)
 - [Neon Object Storage S3 compatibility](https://neon.com/docs/storage/s3-compatibility)
-- [Resend API-key permissions](https://resend.com/changelog/new-api-key-permissions)
