@@ -1,0 +1,27 @@
+{
+  "description": "Capture each user prompt and final response for the 8x assignment.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/capture_exchange.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/capture_exchange.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
