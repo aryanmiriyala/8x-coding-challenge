@@ -47,11 +47,11 @@ Learning sought: session/auth library ergonomics, cart token ownership, merge tr
 
 Defer: 2FA/passkeys, multiple lists, social auth unless evidence makes them essential.
 
-## Slice 3 — Correct test checkout
+## Slice 3 — Correct simulated checkout
 
-Outcome: A verified customer completes exactly one test purchase and sees one correct order.
+Outcome: A verified customer places exactly one no-money demo order and sees it in order history.
 
-Learning sought: inventory locking/reservation, order snapshots, Stripe presentation, webhook idempotency, failure recovery.
+Learning sought: inventory locking/conditional update, order snapshots, request idempotency, transaction rollback, failure recovery.
 
 This slice receives the strongest integration and abuse-case testing.
 
@@ -73,10 +73,10 @@ Treat time as a constraint for prioritization, not an excuse to fake behavior:
 
 - Preserve the end-to-end P0 journey and cut breadth first.
 - Prefer seeded data to fragile third-party product APIs.
-- Prefer hosted payment UI to custom card handling.
+- Keep checkout visibly simulated; do not collect card data or add a payment provider without a new decision.
 - Prefer one correct seller/offer path while retaining the catalog boundary.
 - Do not add Redis, queues, search infrastructure, object storage, or tracing platforms for hypothetical scale.
-- If a provider blocks progress, use a contract-compatible fake and clearly label the demo state.
+- If a provider blocks progress, keep the affected slice honest about demo state and revise its contract.
 - Stop adding features early enough to run the convergence checklist.
 
 No hour allocation is fixed until the team knows the actual challenge clock, scoring rubric, and deployment constraints.

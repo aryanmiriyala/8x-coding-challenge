@@ -30,11 +30,11 @@ Build one Amazon.com-style physical-goods retail storefront. Separate Amazon bus
 - No application scaffold or storage SDK dependency has been added. Runtime-managed files remain deferred until an active slice needs them.
 - Neon and Vercel CLIs are installed and authenticated. Read-only checks found the owner's personal Vercel Hobby scope and its `8x-coding-challenge` project, and the existing Neon Free project `8x-amazon-clone`. The owner reports GitHub is already linked and the Vercel project deployed; that deployment and its environment variables have not yet been independently inspected. No Neon-to-Vercel integration was changed in this check.
 - The local pooled database hostname matches the existing Neon project's only endpoint, which is attached to its default `production` branch. There is no isolated development branch yet. Do not run local migrations, seeds, integration tests, or test writes using the current `.env.local` connection. Create or choose an isolated branch and replace local branch-scoped URLs before implementation.
-- The owner chose simulated, no-money checkout. Stripe is out of P0 entirely (ADR-007); no Stripe account, key, SDK, or webhook is required. Existing payment contracts are being reconciled with this decision.
+- The owner chose simulated, no-money checkout. Stripe is out of P0 entirely (ADR-007); no Stripe account, key, SDK, or webhook is required. P0 payment contracts now specify one atomic demo-order transaction.
 
 ## Known evidence gap
 
-An interactive browser session was unavailable, so fresh screenshots and signed-in end-to-end Amazon flows were not captured. Public pages and official documentation were used instead. Authenticated visual validation remains an explicit pre-visual-lock task and must use a dedicated test identity and test payment data.
+An interactive browser session was unavailable, so fresh screenshots and signed-in end-to-end Amazon flows were not captured. Public pages and official documentation were used instead. Authenticated visual validation remains an explicit pre-visual-lock task and must use a dedicated test identity; do not enter real payment details.
 
 ## Active questions
 

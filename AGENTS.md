@@ -98,9 +98,9 @@ These are current invariants; proposals to change them require explicit rational
 - Account-owned reads and writes enforce ownership at the trusted boundary.
 - Browser-supplied prices, totals, roles, verification state, and payment results are never authoritative.
 - Order items and addresses are snapshotted when an order is created.
-- Payment success comes from a verified provider event, not a return URL.
-- The clone must never accept live payments. Local/E2E runs use a deterministic fake or Stripe test mode; deployed configuration rejects live Stripe keys and live-mode events.
-- Duplicate requests and events do not duplicate charges, orders, reservations, emails, or fulfillment.
+- Demo-order success comes from a committed server-side transaction, not browser input or a return URL.
+- P0 has no payment provider, card entry, or live-payment path. A later provider requires a new decision and security review.
+- Duplicate requests do not duplicate orders, inventory consumption, emails, or fulfillment.
 - Public catalog caching must never leak private cart/account/order data.
 - Product scope is one physical-goods retail storefront. Do not add standalone Amazon service clones, service launchers, or Seller Central workflows without an explicit scope change.
 - Do not add a parallel REST/GraphQL backend for the same Next.js UI without a real external consumer and an accepted decision; use the documented typed use-case boundary.

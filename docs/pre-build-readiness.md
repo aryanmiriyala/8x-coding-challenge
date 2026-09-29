@@ -27,19 +27,20 @@ This checklist makes hidden setup work visible before product code begins. It is
 
 - [x] The owner enabled Neon Auth on the selected Neon project.
 - [ ] Confirm the project is in an Auth-supported AWS region and does not combine Managed Auth with incompatible IP Allow or Private Networking settings.
-- [ ] Link the repository to the intended Neon project/branch without printing or committing credentials.
+- [ ] Choose/create an isolated development branch on the existing Neon Free project; link local tooling to that branch without overwriting secrets. The current local URLs target `production` and must not be used for dev writes.
 - [ ] Pull/store `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, and `NEON_AUTH_BASE_URL` in ignored local or Vercel-managed environment storage.
 - [x] Generate a 256-bit `NEON_AUTH_COOKIE_SECRET` in the ignored local environment; still generate a distinct value for each deployed environment and never commit one.
 - [ ] Treat `NEON_DATA_API_URL` as optional provider configuration; decide on a concrete Data API use case and row-level security model before calling it from a browser.
-- [ ] Confirm pooled application and direct migration URLs address the same branch.
+- [x] Confirm pooled application and direct migration URLs address the same branch; current local URLs match the existing `production` endpoint, not an isolated development branch.
 - [ ] Register the exact preview/public-demo origins with Neon Auth; keep login, recovery, callback, `/api/auth`, and static assets outside protected-route matchers.
-- [x] Use an isolated Neon development branch for local commerce and Managed Auth; automated tests use disposable branches. Encode this in test scripts when implementation begins.
+- [ ] Establish an isolated Neon development branch for local commerce and Managed Auth; automated tests use disposable branches. Encode this in test scripts when implementation begins.
 - [ ] Validate Managed Auth sign-up, verification, sign-in, sign-out, recovery, session restoration, and direct protected-operation denial.
 - [ ] Validate the managed-schema relationship strategy before adding app-owned foreign keys to `neon_auth.user`.
 
 ## Vercel and runtime
 
-- [ ] Connect Vercel to GitHub and the directly owned Neon project through native integrations; avoid personal deployment/database tokens for normal builds.
+- [x] Owner reports GitHub linked to the existing Vercel Hobby project and a deployment exists; inspect the exact project/deployment configuration before treating this as verified.
+- [ ] Connect that Hobby project to the existing Neon-owned Free project through the existing-account integration; do not provision a Vercel-managed Neon resource.
 - [ ] Define Local, Test, Preview, and Public Demo environment boundaries; Preview and Demo must not share data, auth sessions, or secrets.
 - [ ] Confirm Node/Next.js runtime, database pooling, build output, secure cookies, trusted origins, health checks, logs, rollback, and spending controls in a minimal preview.
 - [ ] Establish one controlled migration step using the direct URL; do not run migrations concurrently at application startup.
@@ -47,8 +48,7 @@ This checklist makes hidden setup work visible before product code begins. It is
 
 ## Provider safety
 
-- [ ] Keep `PAYMENT_MODE=fake` for ordinary local work; create/use Stripe sandbox credentials only when the checkout integration slice begins.
-- [ ] Executable configuration rejects live Stripe keys and live-mode events.
+- [ ] Keep P0 checkout server-side and simulated. No payment account, SDK, key, webhook, or card form is needed; test atomic order/stock/cart behavior and visibly label no-money orders.
 - [ ] Use Neon-managed auth email during development. Configure custom SMTP before any production-like auth release.
 - [ ] Defer Resend or another application-mail provider until an order/customer message actually exists.
 - [ ] Keep seeded catalog imagery in app static assets for the first slice. If an active slice adds runtime-managed files, use the selected Neon Object Storage; check region, access mode, CDN, cost, and branch isolation before provisioning.
@@ -68,7 +68,7 @@ Time-box these and record results; they are evidence gathering, not foundations 
 
 1. **Runtime/build:** minimal pinned Next.js application builds locally and on Vercel.
 2. **Database:** chosen ORM applies an empty migration through the direct URL and performs pooled reads/writes on Neon.
-3. **Transactions:** inventory decrement/reservation proves the required lock or optimistic-concurrency behavior.
+3. **Transactions:** concurrent inventory decrement and atomic demo-order creation prove the required lock or optimistic-concurrency behavior.
 4. **Auth:** Neon Auth completes the P0 lifecycle through the Next.js proxy and server-side authorization denies bypass attempts.
 5. **Preview isolation:** a Vercel preview uses an isolated Neon database/Auth branch and cannot mutate public-demo state.
 

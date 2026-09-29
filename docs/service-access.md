@@ -17,7 +17,7 @@ Rule: Never place credentials in Git, documentation, screenshots, logs, fixtures
 
 | Service | Needed when | Notes |
 | --- | --- | --- |
-| Stripe (optional) | Only if an explicit checkout decision requires an external payment-processor demo | Dummy-only checkout likely does not need it; do not create or connect a Stripe account for Slice 0 |
+| Payment provider | Not needed for P0 | Simulated checkout uses only the application database; any provider requires a later decision |
 | Custom SMTP and/or application email provider | Production-like auth email or order email becomes active | Neon shared SMTP is sufficient for development auth codes. Configure custom SMTP before a production-like auth release; add Resend or another provider only for application-owned messages when needed |
 | Neon Object Storage | Runtime-managed catalog images, generated assets, or user uploads become an active use case | Selected S3-compatible store for this Neon-backed app because buckets and objects branch with PostgreSQL. Declare only required buckets through `neon.ts`; credentials are injected by Neon per branch |
 | Domain registrar/DNS | We want branded public URLs and real email delivery | A `vercel.app` URL is sufficient for early previews; a controlled domain is useful before public auth email |
@@ -29,7 +29,7 @@ No separate hosted identity account is required: Neon Auth is Managed Better Aut
 - Every person uses an individual account with MFA/passkey; never share passwords or recovery codes.
 - Store recovery codes and original one-time secrets in a trusted password manager.
 - Grant the smallest project role required and review collaborators before a public release.
-- The project owner retains billing, domain, repository, database, Stripe, and email-provider recovery access.
+- The project owner retains billing, domain, repository, database, and email-provider recovery access.
 - Removing a collaborator also triggers review/rotation of credentials they could read.
 
 ## Application and automation access
@@ -52,7 +52,7 @@ For this clone:
 - Neon Object Storage credentials alone do not create a bucket. Before using an `assets` bucket, confirm it exists on the branch targeted by `AWS_ENDPOINT_URL_S3` and choose `private` or `public_read` based on the files it will hold.
 - No AWS account or AWS S3 bucket is part of this architecture. The `AWS_*` names are Neon-provided S3 protocol conventions. Storage clients must explicitly use the Neon branch endpoint and Neon-issued credentials, with no fallback to the AWS S3 default endpoint; executable configuration should reject a non-Neon storage endpoint when this integration becomes active.
 - Next.js loads `.env.local` itself. A standalone Node script must load that file explicitly (for example, `node --env-file=.env.local script.mjs`); plain `dotenv/config` defaults to `.env`. Treat presigned object URLs as bearer credentials and do not print them to application or CI logs.
-- Stripe uses a sandbox restricted key where its permissions cover the implemented Checkout operations; otherwise use the standard test secret temporarily. A webhook signing secret is separate and unique per endpoint/environment.
+- No payment-provider account, key, SDK, or webhook is required for P0 (ADR-007).
 - Custom SMTP or a later application email provider uses a sending-only, domain-restricted credential when enabled.
 - Coding agents do not receive dashboard passwords, recovery codes, broad personal tokens, or live-payment credentials.
 
@@ -77,7 +77,7 @@ Tracked test configuration contains fake values only. Real sandbox credentials n
 - Use `.env.local` only for developer-specific sandbox values and ensure it is ignored before adding any value.
 - Use one isolated Neon development branch for local commerce and Managed Auth; use disposable branches for integration tests. Keep application email captured and other provider calls deterministic by default.
 - `node scripts/configure-local-neon.mjs` maps the supplied pooled Neon connection into `DATABASE_URL`, derives the matching direct URL for `DATABASE_URL_UNPOOLED`, and fills only blank app-managed secrets with independent 256-bit random values. It does not generate provider-issued database, storage, or payment credentials and never prints values. Confirm the branch before running it.
-- Use Stripe CLI/test credentials only for the focused webhook/integration checks that need them.
+- Do not add payment credentials to local or deployed environments for P0.
 - Do not paste secrets into agent prompts or terminal commands that will echo them into logs.
 
 ### Vercel preview and public demo
@@ -109,15 +109,12 @@ Names are hypotheses until the scaffold establishes the executable environment s
 | `AWS_SECRET_ACCESS_KEY` | Yes | Local/preview/demo only when Neon Object Storage is provisioned | Branch-scoped Neon S3 secret; generated/injected by Neon, never commit or expose to browser code |
 | `AWS_ENDPOINT_URL_S3` | No | Local/preview/demo only when Neon Object Storage is provisioned | Branch-specific S3 endpoint supplied by Neon; the S3 client must use path-style addressing |
 | `AWS_REGION` | No | Local/preview/demo only when Neon Object Storage is provisioned | Region supplied by Neon; verify the project's region supports Object Storage |
-| `PAYMENT_MODE` | No | All | Allow only `fake` or `stripe_test`; no live value exists |
-| `STRIPE_SECRET_KEY` | Yes | Focused local/preview/demo | Must be a sandbox/test or restricted-test key; live prefixes fail validation |
-| `STRIPE_WEBHOOK_SECRET` | Yes | Focused local/preview/demo | Separate signing secret per webhook endpoint/environment |
 | `RESEND_API_KEY` | Yes | Preview/demo only when application email is active | Optional sending-only/domain-restricted key; not needed for Neon Auth email |
 | `EMAIL_FROM` | No | Preview/demo when application email is active | Verified sender identity; demo-safe value |
-| `CRON_SECRET` | Yes | If scheduled cleanup exists | Independent 32-random-byte (256-bit) secret protecting the reservation-cleanup route; generated locally now but dormant until the route exists |
+| `CRON_SECRET` | Yes | Only if a later active slice adds scheduled work | Independent 32-random-byte (256-bit) secret; a previously generated local value is dormant and P0 checkout needs no cron route |
 | `APP_BASE_URL` | No | All | Canonical links and redirects; must match trusted origin policy |
 
-Stripe-hosted Checkout does not require a browser publishable key for the initial redirect flow. Add one only if the selected Stripe presentation actually uses client-side Stripe components.
+P0 has no `PAYMENT_MODE`, Stripe variables, or client-side payment configuration in the committed environment contract. Legacy ignored local values, if any, are not used by the planned application.
 
 ## Rotation and incident procedure
 
@@ -137,7 +134,7 @@ If a value enters Git or chat, treat it as compromised immediately. Revoke/rotat
 - [ ] Neon Auth is enabled on the intended AWS project/branches; Auth is not combined with incompatible IP Allow or Private Networking settings.
 - [ ] Each deployed origin is trusted in Neon and each environment has its own cookie secret.
 - [ ] If runtime file storage is in the active slice, confirm Object Storage region availability, create/declare the minimal bucket set, and verify branch isolation. If credentials are already present, they do not prove a bucket exists. Otherwise keep images in app static assets.
-- [ ] Stripe is sandbox-only and live credentials are technically rejected.
+- [ ] The implemented demo has no card form, payment provider dependency, secret, or webhook; checkout is labeled simulated.
 - [ ] `.env.example`, ignore rules, and executable environment validation exist before secrets are introduced.
 - [ ] Deployed secrets use write-only/sensitive storage and least privilege.
 - [ ] No external credential is added until its slice needs it.
@@ -153,6 +150,4 @@ If a value enters Git or chat, treat it as compromised immediately. Revoke/rotat
 - [Neon Auth production checklist](https://neon.com/docs/auth/production-checklist)
 - [Neon Object Storage](https://neon.com/docs/storage/overview)
 - [Neon Object Storage S3 compatibility](https://neon.com/docs/storage/s3-compatibility)
-- [Stripe API-key authentication](https://docs.stripe.com/api/authentication)
-- [Stripe testing](https://docs.stripe.com/testing)
 - [Resend API-key permissions](https://resend.com/changelog/new-api-key-permissions)
