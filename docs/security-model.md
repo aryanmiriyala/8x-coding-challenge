@@ -36,6 +36,7 @@ Status: Living threat model; review per slice
 | SEC-11 | Secrets/PII leak through logs or client DTO | Server-only modules, DTO allowlists, logger redaction, analytics schema | Static checks and log inspection |
 | SEC-12 | Search/review/cart abuse degrades service | Input bounds, pagination, simple deployment-appropriate limits, timeouts, host logs | Load/limit tests proportional to exposure |
 | SEC-13 | Misconfiguration accidentally enables a real charge | Accept only Stripe test/sandbox credentials; reject live-mode events/objects; label demo checkout; use only test payment values | Environment validation + webhook fixture + deployed configuration inspection |
+| SEC-14 | Malicious or oversized file is uploaded, served from the wrong visibility class, or used to exhaust storage | Defer uploads until an active slice; allowlist detected content types, enforce byte/pixel limits, use random immutable keys, scan/process only when justified, keep private files in private buckets, authorize before signing URLs, set cache controls, and monitor usage | Upload boundary tests, cross-user access checks, storage-usage review |
 
 ## Security requirements by slice
 
@@ -43,6 +44,7 @@ Status: Living threat model; review per slice
 - Auth/cart: session lifecycle, enumeration resistance, ownership, cart token security, rate limits.
 - Checkout/order: server totals, address ownership, inventory concurrency, payment verification, idempotency.
 - Admin/operations: role enforcement, audit log, state transitions, re-authentication for high-risk actions if warranted.
+- Runtime file storage, if activated: server-side upload authorization, content/size validation, private/public bucket separation, signed URL expiry, cache behavior, and storage usage controls.
 
 ## Data minimization
 

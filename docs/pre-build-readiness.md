@@ -50,7 +50,8 @@ This checklist makes hidden setup work visible before product code begins. It is
 - [ ] Executable configuration rejects live Stripe keys and live-mode events.
 - [ ] Use Neon-managed auth email during development. Configure custom SMTP before any production-like auth release.
 - [ ] Defer Resend or another application-mail provider until an order/customer message actually exists.
-- [ ] Do not create object storage, Redis, queues, search services, analytics platforms, or Neon Functions unless an active slice demonstrates the need.
+- [ ] Keep seeded catalog imagery in app static assets for the first slice. If an active slice adds runtime-managed files, Neon Object Storage is the preferred candidate; check region, access mode, CDN, cost, and branch isolation before provisioning.
+- [ ] Do not create Redis, queues, search services, analytics platforms, or Neon Functions unless an active slice demonstrates the need.
 
 ## Data, assets, and UX evidence
 

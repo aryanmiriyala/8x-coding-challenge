@@ -148,12 +148,12 @@ Indexes: status/created date, GIN full-text expression over `search_text`, and `
 - `id` UUID PK
 - `product_id` FK indexed
 - `variant_id` nullable FK for variant-specific media
-- approved static `url`
+- approved static asset path/URL for P0
 - required `alt_text`
 - `sort_order`
 - optional width/height
 
-Images are static approved assets in P0; there is no upload/storage pipeline.
+Images are approved static app assets in P0; there is no runtime upload/storage pipeline. If a later active slice adds Neon Object Storage, persist the stable bucket object key in this row (never a credential-bearing or expiring signed URL); create metadata/migration changes only with that slice.
 
 ### `product_variant`
 
