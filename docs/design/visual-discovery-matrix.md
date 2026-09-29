@@ -70,3 +70,15 @@ This document serves as the visual and workflow reference matrix for Aster Marke
 ## 6. Account Dashboard
 *   **Layout**: Grid of tiles (Your Orders, Login & security, Prime, Your Addresses, Payment options).
 *   **Your Orders**: Tabbed list (Orders, Buy Again, Not Yet Shipped, Cancelled). Each order block shows Order Placed date, Total, Ship To, Order #, Status (e.g., "Delivered yesterday"), and action buttons (Track package, Return items, Write a product review).
+
+## 7. Direct Application References
+
+Here are direct reference points grabbed from the actual application interface to ensure we recreate the UI accurately:
+
+*   **Homepage Window Display**: A large gradient banner highlighting a feature product or deal.
+*   **PDP Thumbnail Layout**: Left-side vertical column of 50x50 thumbnails acting as a selector for the main image view.
+*   **Buy Box Variations**: 
+    *   Price format: Large integer, small superscript fractional.
+    *   Delivery: Green "In Stock", exact date "Delivery by Tomorrow".
+    *   Fulfillment: "Ships from: Amazon", "Sold by: Brand Name".
+*   **Cart Line Items**: Clean rows separating the product thumbnail, variant text, quantity dropdown, and right-aligned price.
