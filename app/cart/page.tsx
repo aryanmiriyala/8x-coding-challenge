@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { prisma } from '@/lib/db/prisma';
 import { auth } from '@/lib/auth';
 import { cookies } from 'next/headers';
