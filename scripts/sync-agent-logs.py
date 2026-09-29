@@ -18,6 +18,16 @@ SESSION_ID = "ba7c8574-e350-40fd-98bf-e6ce8b0c92b6"
 def safe_session_id(value: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]", "_", value)
 
+def redact_content(content: str) -> str:
+    """Redact potential credentials and secrets from logs."""
+    # Redact URLs containing passwords (like postgresql urls)
+    content = re.sub(r'(postgresql:\/\/[^:]+:)[^@]+(@.*?)', r'\1[REDACTED]\2', content)
+    # Redact specific secrets
+    content = re.sub(r'(NEON_AUTH_COOKIE_SECRET=).*?(\n|\r|$)', r'\1[REDACTED]\2', content)
+    content = re.sub(r'(AWS_SECRET_ACCESS_KEY=).*?(\n|\r|$)', r'\1[REDACTED]\2', content)
+    # Redact any other obvious keys
+    content = re.sub(r'([A-Za-z0-9_-]+_SECRET(?:_KEY)?\s*[:=]\s*)[\w\-]+', r'\1[REDACTED]', content)
+    return content
 
 def sync_transcript_to_log(transcript_path: Path, log_dir: Path) -> Path:
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -37,7 +47,7 @@ def sync_transcript_to_log(transcript_path: Path, log_dir: Path) -> Path:
                 clean_prompt = m.group(1).strip() if m else content.strip()
                 current_prompt = {
                     "timestamp": created_at,
-                    "prompt": clean_prompt,
+                    "prompt": redact_content(clean_prompt),
                 }
             elif step_type == "PLANNER_RESPONSE" and not data.get("tool_calls"):
                 if current_prompt is not None and content.strip():
@@ -45,7 +55,7 @@ def sync_transcript_to_log(transcript_path: Path, log_dir: Path) -> Path:
                         "prompt_time": current_prompt["timestamp"],
                         "prompt": current_prompt["prompt"],
                         "response_time": created_at,
-                        "response": content.strip(),
+                        "response": redact_content(content.strip()),
                     })
                     current_prompt = None
 

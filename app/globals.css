@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-brand: #232f3e;
+  --color-brand-strong: #131921;
+  --color-accent: #f3a847;
+  --color-accent-hover: #f0c14b;
+  --color-canvas: #f3f3f3;
+  --color-surface: #ffffff;
+  --color-text: #0f1111;
+  --color-muted: #565959;
+  --color-link: #007185;
+  --color-success: #067d62;
+  --color-warning: #e77600;
+  --color-danger: #b12704;
+  --color-focus: #e77600;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-text);
+}

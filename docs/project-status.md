@@ -2,7 +2,7 @@
 
 Last updated: 2026-09-29
 Phase: **Slice planning (Slice 0: Executable Foundation)**
-Overall state: **Discovery complete; Slice 0 authorized; actual code paused for final plan alignment**
+Overall state: **Discovery complete; Slice 0 authorized; Slice 0 foundation scaffold in progress**
 
 ## Current objective
 
@@ -28,7 +28,7 @@ Build one Amazon.com-style physical-goods retail storefront. Separate Amazon bus
 - P0 does not require the Data API, but the local `NEON_DATA_API_URL` now uses the correct `vercel-dev` `apirest` host if a later experiment needs it.
 - Neon Object Storage now has two architecture-aligned buckets on both `production` and `vercel-dev`: `catalog-assets` (`public_read`) for catalog/merchandising media and `private-uploads` (`private`) for source/generated/admin files or future moderation queues. Local `vercel-dev` put/head/delete smoke passed for both buckets.
 - No application scaffold or storage SDK dependency has been added. Runtime-managed files remain deferred until an active slice needs them.
-- Neon and Vercel CLIs are installed and authenticated. Read-only checks identified the owner's personal Vercel Hobby scope and its `8x-coding-challenge` project, and the existing Neon Free project `8x-amazon-clone`. Vercel deployment metadata verifies the GitHub `main` link, but both recorded production deployments are in `ERROR`: the build detects no Next.js version because the repository intentionally has no application scaffold yet.
+- Neon and Vercel CLIs are installed and authenticated. Read-only checks identified the owner's personal Vercel Hobby scope and its `8x-coding-challenge` project, and the existing Neon Free project `8x-amazon-clone`. Vercel deployment metadata verifies the GitHub `main` link, but both recorded production deployments are in `ERROR`: the build detects no Next.js version because the repository now contains the initial Slice 0 application scaffold.
 - The Neon/Vercel database integration is now branch-targeted for local and deployed environments. Vercel Development envs point at `vercel-dev`; Vercel Production envs point at `production`. Auth, Data API, storage endpoint, bucket-name, and app-managed cookie-secret variables have been added/refreshed for both environments.
 - Integration is still not a healthy deployed runtime because the repository has no application scaffold yet. Trusted Auth origins also still need registration once real app URLs exist.
 - Integration checks passed for local pooled/direct URL agreement, Neon database diagnostics on `production` and `vercel-dev`, Neon Auth enabled status and JWKS HTTP 200 on both branches, active optional Data API status on both branches, local Data API host correctness, Neon Object Storage bucket provisioning plus local `vercel-dev` upload/read/delete, and Vercel Development/Production env host verification. No Auth users or app deployment was made.
