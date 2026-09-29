@@ -76,20 +76,19 @@ Examples:
 
 Open choices: password policy details and whether a later requirement justifies leaving Managed Auth. Provider is Neon Auth; P1 MFA/passkeys remain deferred because they are not currently exposed by its managed contract.
 
-## UC-CHECK-01 — Complete a test purchase
+## UC-CHECK-01 — Place a demo order
 
 State: candidate; highest-risk commerce flow
 
-Outcome: A verified customer can pay in test mode and receive exactly one correct order.
+Outcome: A verified customer can place one correct no-money demo order.
 
 Main example:
 
 1. Customer enters checkout from a non-empty cart.
 2. Customer chooses an owned address and sees items and totals.
-3. Server revalidates offers/prices/inventory and creates an expiring reservation plus pending order snapshot.
-4. Customer completes a Stripe test payment.
-5. A signed provider event confirms matching order, amount, and currency.
-6. The order becomes paid once, inventory is reconciled, purchased lines leave the cart, and confirmation appears.
+3. Customer confirms a clearly labeled simulated checkout; no card data is requested.
+4. Server revalidates ownership, offers, prices, and inventory and atomically creates the order/payment/address snapshots, consumes inventory, and retires purchased cart lines.
+5. Confirmation reads the committed owned order; no money moves.
 
 Failure/abuse examples:
 
@@ -97,11 +96,11 @@ Failure/abuse examples:
 - Address belonging to another user is rejected.
 - Stock conflict returns to cart with an actionable message.
 - Duplicate checkout request returns/reuses the same attempt where semantics match.
-- Duplicate or out-of-order provider events do not duplicate effects.
-- Return URL arrives before webhook: screen shows processing, not a false success.
-- Provider reports success for mismatched amount/currency/order: quarantine and alert.
+- Concurrent duplicate requests do not create another order or consume stock twice.
+- A reused key with changed intent is rejected; an aborted transaction leaves cart and stock intact.
+- A forged confirmation URL or browser-supplied payment result cannot create a successful order.
 
-Open choices: hosted vs embedded checkout, reservation duration, tax/shipping simulation.
+Open choices: tax/shipping simulation and confirmation copy. Payment-provider integration is out of P0 (ADR-007).
 
 ## UC-ORDER-01 — Review and manage an order
 

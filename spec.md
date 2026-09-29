@@ -21,15 +21,15 @@ Only P0 is a first-release candidate. P1/P2 document possible expansion and must
 
 ## 1. Release hypothesis
 
-The first release is a responsive Amazon.com-inspired physical-goods storefront with a real database, authentication, server-authoritative cart and checkout, Stripe test payments, and customer order history. It supports guests, customers, and administrators. It launches with one platform seller; the product/variant/offer separation models the storefront correctly without adding a seller portal or multi-seller operations.
+The first release is a responsive Amazon.com-inspired physical-goods storefront with a real database, authentication, server-authoritative cart and simulated no-money checkout, and customer order history. It supports guests, customers, and administrators. It launches with one platform seller; the product/variant/offer separation models the storefront correctly without adding a seller portal or multi-seller operations.
 
-“Real” means the implemented demo behavior works: state persists, permissions are enforced, totals are correct, and test payments reconcile. It does not mean production Amazon-scale logistics, uptime, traffic, fraud, tax, or marketplace operations.
+“Real” means the implemented demo behavior works: state persists, permissions are enforced, totals are correct, and simulated orders commit exactly once. It does not mean production Amazon-scale logistics, uptime, traffic, fraud, tax, or marketplace operations.
 
 ### Current scope labels
 
 | Level | Meaning | Included capabilities |
 | --- | --- | --- |
-| P0 | Current candidate for the first coherent demo | Catalog, practical search/filter/sort, PDP, cart, auth, address, test checkout, order confirmation/history, authorization, repeatable seed workflow, security baseline |
+| P0 | Current candidate for the first coherent demo | Catalog, practical search/filter/sort, PDP, cart, auth, address, simulated checkout, order confirmation/history, authorization, repeatable seed workflow, security baseline |
 | P1 | Likely next, if P0 learning supports it | Wishlist, verified-purchase reviews, cancellation before fulfillment, basic shipment timeline, 2FA, richer admin UI |
 | P2 | Plausible expansion, not yet committed | Multiple customer-visible offers, returns/refunds automation, recommendations, coupons, passkeys, object uploads, real carrier/tax services |
 
@@ -150,27 +150,26 @@ Acceptance:
 
 - **CHECK-01 (P0):** Checkout requires a verified customer, non-empty valid cart, and at least one valid shipping address.
 - **CHECK-02 (P0):** Checkout shows address, delivery option placeholder, item summary, server-derived subtotal, discounts, shipping, estimated tax, and total.
-- **CHECK-03 (P0):** The app creates one pending order with immutable item/price/address snapshots before handing off to Stripe Checkout in test mode.
-- **CHECK-04 (P0):** Inventory is reserved transactionally for a bounded window; expired/failed sessions release it.
-- **CHECK-05 (P0):** Payment completion is confirmed by a verified Stripe webhook, not by trusting the browser redirect.
-- **CHECK-06 (P0):** Checkout creation and webhook handling use idempotency keys and stored provider event IDs.
-- **CHECK-07 (P0):** Success page handles webhook delay by showing a bounded processing state and polling the owned order.
+- **CHECK-03 (P0):** One server-side transaction creates an immutable item/price/address order snapshot, a simulated payment record, and the associated inventory/cart changes.
+- **CHECK-04 (P0):** Inventory is checked and consumed atomically; a stock conflict or failed transaction leaves cart, inventory, and order state unchanged.
+- **CHECK-05 (P0):** Order success is determined only from committed server state, never browser-submitted payment results or success URLs.
+- **CHECK-06 (P0):** Checkout uses a caller idempotency key bound to the verified customer and request intent; repeats return the same committed order, while changed intent with the same key is rejected.
+- **CHECK-07 (P0):** Confirmation reads only the customer's owned order and handles a missing or failed submission without claiming success.
 - **CHECK-08 (P0):** No raw PAN, CVC, or full payment credentials pass through or persist in the application.
-- **CHECK-09 (P0):** The clone cannot process live payments: configuration rejects live Stripe keys, webhook handling rejects live-mode events, and the UI clearly labels checkout and resulting orders as demonstrations.
+- **CHECK-09 (P0):** The clone has no card-entry or payment-provider path; checkout and resulting orders are visibly labeled demonstrations that charge no money.
 
 Acceptance:
 
 - Editing request payload prices has no effect on order totals.
-- Sending the same checkout request twice returns the same pending order/session when appropriate.
-- Sending the same webhook twice changes state once.
-- Payment success produces a paid order and cart consumption; failure/expiry never produces a paid order.
-- Test checkout produces simulated provider records only and never moves real money.
+- Sending the same checkout request twice returns the same order and changes stock once.
+- A concurrent stock conflict or transaction failure produces no order and leaves cart/stock intact.
+- A successful simulated checkout produces one placed demo order, a simulated payment record, and consumed cart lines; no money moves.
 
 ### 4.7 Orders and fulfillment
 
 - **ORDER-01 (P0):** Customers can list their orders and open an order detail with items, totals, address snapshot, payment state, and timeline.
 - **ORDER-02 (P0):** Order numbers are human-readable opaque identifiers, not sequential database IDs.
-- **ORDER-03 (P0):** Admin can move paid orders through processing, shipped, and delivered demo states.
+- **ORDER-03 (P0):** Admin can move placed demo orders through processing, shipped, and delivered demo states.
 - **ORDER-04 (P1):** Customer may cancel before processing/shipment; cancellation releases/refunds as appropriate and is idempotent.
 - **ORDER-05 (P1):** Shipment timeline supports label-created, shipped, out-for-delivery, delivered, delayed, and exception states.
 - **ORDER-06 (P2):** Eligible delivered items can enter a return/replacement workflow with reason, method, and refund state.
@@ -267,7 +266,7 @@ Every interactive component specifies default, hover, focus-visible, active, dis
 - Check Origin/Host for state-changing custom endpoints and rely on same-site protections only as defense in depth.
 - Apply practical rate limits to high-risk public/auth/payment mutations using the lightest mechanism supported by the chosen deployment. Do not add a distributed cache solely to imitate large-scale infrastructure.
 - Redact credentials, tokens, addresses, email, and provider secrets from logs and error tracking.
-- Store provider customer/payment-method references only; Stripe owns payment entry.
+- Never collect or store card/payment credentials; P0 has no payment provider.
 - Use least-privilege production keys, environment separation, secret scanning, dependency audit, and locked dependencies.
 - Audit admin and order/payment state changes.
 
@@ -278,7 +277,7 @@ Every interactive component specifies default, hover, focus-visible, active, dis
 - Images are responsive, sized, lazy-loaded below the fold, and served in modern formats where possible.
 - Database queries are paginated, indexed, selected to DTOs, and protected from N+1 patterns.
 - Payment/order mutations are transactional and idempotent.
-- External calls have timeouts; webhook processing can be retried safely.
+- External calls have timeouts; checkout database transactions and retries remain safe.
 - User-facing errors include a recovery action and correlation ID, never a stack trace.
 
 ## 10. Deployment and release requirements
@@ -289,7 +288,7 @@ Every interactive component specifies default, hover, focus-visible, active, dis
 - **DEPLOY-04 (P0):** Seed is explicit, repeatable, and cannot silently destroy public-demo data.
 - **DEPLOY-05 (P0):** The deployed app exposes a non-sensitive health/readiness endpoint and has critical post-deployment smoke checks.
 - **DEPLOY-06 (P0):** Releases record the deployed revision and retain a practical rollback path while schema changes remain backward compatible.
-- **DEPLOY-07 (P0):** The public demo uses HTTPS, secure deployed-domain cookie/origin settings, Stripe test mode, and environment-specific webhook secrets.
+- **DEPLOY-07 (P0):** The public demo uses HTTPS and secure deployed-domain cookie/origin settings; checkout remains no-money and visibly labeled.
 - **DEPLOY-08 (P0):** Preview deployments never mutate the public-demo database automatically.
 
 The provider is deliberately undecided. Selection follows `docs/deployment-strategy.md` and must preserve the one-app/one-database architecture.
@@ -300,14 +299,14 @@ Minimum product events:
 
 - `search_submitted`, `filter_applied`, `product_viewed`
 - `add_to_cart`, `remove_from_cart`, `checkout_started`
-- `payment_succeeded`, `payment_failed`, `order_viewed`
+- `demo_order_placed`, `demo_order_failed`, `order_viewed`
 
 Minimum operational signals:
 
 - Structured redacted application logs with a request/correlation ID where useful.
 - Clear server/client error capture during development and preview.
 - A simple health check for the application and database.
-- A few useful events around auth, checkout, webhook failure, and order transitions; no dedicated telemetry platform is required for the clone.
+- A few useful events around auth, checkout failure, and order transitions; no dedicated telemetry platform is required for the clone.
 
 Analytics must not contain raw search PII, addresses, payment data, auth tokens, or full emails.
 
@@ -316,17 +315,17 @@ Analytics must not contain raw search PII, addresses, payment data, auth tokens,
 ### Automated
 
 - Unit: money/totals, promotion rules, state transitions, search parsing, permission predicates.
-- Integration: auth lifecycle, cross-user denial, cart merge, transactional inventory, order creation, idempotent webhook processing.
+- Integration: auth lifecycle, cross-user denial, cart merge, transactional inventory/order creation, and checkout idempotency.
 - E2E: guest browse → cart → sign-in → checkout → confirmation; customer order access; admin fulfillment; mobile navigation.
 - Accessibility: automated axe checks plus keyboard/manual zoom checks for home, results, PDP, cart, auth, checkout, and order detail.
-- Security regression: unauthenticated and cross-tenant requests, forged totals, invalid Origin, duplicate webhook, rate limits, and unsafe redirects.
+- Security regression: unauthenticated and cross-user requests, forged totals, invalid Origin, duplicate checkout, rate limits, and unsafe redirects.
 
 ### Current P0 convergence checklist
 
 - [ ] All P0 requirements have a passing automated or documented manual acceptance check.
 - [ ] No high/critical dependency vulnerabilities without a written exception.
 - [ ] Database migrations apply cleanly to an empty database and seed is repeatable.
-- [ ] Stripe test success, failure, retry, expiry, and duplicate-webhook paths are verified.
+- [ ] Simulated checkout success, stock conflict, rollback, concurrent retry, and duplicate-request paths are verified.
 - [ ] Cross-user authorization tests pass for every account-owned resource.
 - [ ] Responsive and keyboard paths pass at defined viewports.
 - [ ] Public-demo configuration fails closed when required secrets/providers are missing.
@@ -339,7 +338,7 @@ These do not block unrelated work. Each only needs to be decided before the slic
 
 1. Validate the Vercel + directly owned Neon integration trial: runtime compatibility, pooled application connections, direct migration connections, preview database/Auth branches, migration flow, region, and cost controls.
 2. Validate Neon Auth for the complete P0 lifecycle. Custom SMTP is required before treating auth as production-like; a separate application email provider remains deferred until order messaging exists.
-3. Whether P0 uses Stripe-hosted Checkout or embedded Checkout. Hosted is faster and lowers UI/security burden; embedded is visually closer to Amazon.
+3. Simulated checkout is selected for P0 by ADR-007. Revisit payment providers only for an explicit new use case.
 4. Final name, logo, and licensed/generated product imagery.
 
 Provider calls stay in small server-only integration files so secrets and SDK details do not leak into UI or domain rules. This is simple code organization, not a generalized adapter framework.

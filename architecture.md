@@ -13,7 +13,7 @@ Concrete P0 contracts are maintained in `docs/api-contracts.md`, `docs/database-
 
 ## 1. Architecture hypothesis
 
-The chosen deployment shape is a **lightweight modular monolith**: one Next.js application, one Neon PostgreSQL database with Managed Better Auth, and only the external providers required to demonstrate a feature safely (Stripe test mode and later application email). It gives us transactional correctness and strong server-side authorization without pretending this clone needs Amazon's infrastructure.
+The chosen deployment shape is a **lightweight modular monolith**: one Next.js application, one Neon PostgreSQL database with Managed Better Auth, and optional application email only when an active use case needs it. It gives us transactional correctness and strong server-side authorization without pretending this clone needs Amazon's infrastructure.
 
 Microservices are out of scope. “Modules” mean ordinary folders and boundaries inside one application, not independently deployed services. Catalog, cart, inventory, checkout, and orders are easier to keep correct with local database transactions.
 
@@ -29,11 +29,10 @@ Next.js application
    |-- Small domain modules
    |     catalog | cart | checkout | orders | auth
    |-- Thin provider boundaries
-   |     Stripe test payments | email
+   |     Neon Auth | optional email
    |
    +------ PostgreSQL (source of truth)
    +------ Neon Object Storage (deferred; runtime-managed files only)
-   +------ Stripe test mode (payment UI + events)
    +------ Email provider (verification/recovery)
 ```
 
@@ -52,7 +51,7 @@ That is the initial topology. Seeded catalog images ship as approved static asse
 | ORM/migrations | Prisma ORM 8 | Medium; run a locking/migration spike before committing inventory logic |
 | Authentication | Neon Auth (Managed Better Auth) via `@neondatabase/auth` | Trial; enabled by the owner, then verify Next.js proxy, email/password lifecycle, branch isolation, and protected operations in Slice 0 |
 | Runtime file storage | Neon Object Storage (S3-compatible) when runtime uploads/generated files become active; app `public/` for seeded static assets | Selected; defer bucket provisioning until an active use case; verify project region, access mode, CDN needs, and cost then |
-| Payments | Stripe Checkout Sessions in test mode | High for provider; hosted versus embedded remains an experiment |
+| Payments | Server-authoritative simulated checkout; no external provider | Accepted for P0 by ADR-007; revisit only for an explicit new use case |
 | Rate limiting | Auth-library/host capability or a simple application mechanism | Medium; use the lightest option that fits the actual preview topology; no Redis by default |
 | Email | Neon-managed auth email; provider adapter later for order messages | Medium for auth; custom SMTP is required before a production-like auth release, while Resend remains optional for application mail |
 | Testing | Vitest + Testing Library + Playwright + axe | Medium-high; exact split should follow test value and runtime cost |
@@ -71,7 +70,7 @@ app/
   admin/                   # small role-protected order-operations route; catalog UI only if needed
   api/
     auth/[...path]/
-    stripe/webhook/
+    health/
   actions/                 # thin mutation entry points
 components/
   ui/                      # accessible primitives
@@ -110,7 +109,7 @@ Rules:
 
 ```text
 Untrusted: browser input, cookies, URL params, Server Function args,
-           webhook bodies, provider callbacks, imported seed/catalog data
+           auth callbacks, imported seed/catalog data
                      |
                      v
 Validate shape -> authenticate -> authorize action/resource -> execute use case
@@ -178,27 +177,26 @@ The first release seeds one platform seller, but all purchase records reference 
 Cart 1---* CartItem *---1 Offer
 User 1---* Wishlist 1---* WishlistItem *---1 Product
 User 1---* Order 1---* OrderItem
-Order 1---* Payment
+Order 1---1 Payment
 Order 1---* Shipment 1---* ShipmentItem *---1 OrderItem
-Order 1---* InventoryReservation
 ```
 
 Constraints and snapshots:
 
 - One open customer cart per currency; one guest cart per signed guest identifier.
 - Unique `(cartId, offerId)` prevents duplicate lines.
-- Inventory maintains non-negative `available` and `reserved` quantities; updates are atomic.
+- Inventory maintains non-negative available quantity; checkout decrements it atomically.
 - `OrderItem` snapshots product/variant/offer title, SKU, seller, image, unit price, discount, tax basis, and quantity.
 - `Order` snapshots the shipping address and totals. Editing the address book never mutates history.
-- Provider event IDs and checkout idempotency keys are unique.
+- Checkout idempotency keys are unique per verified customer and request intent.
 - If reviews enter scope, unique `(userId, productId)` supports the initial one-review policy.
 
 ## 6. Database strategy
 
-- PostgreSQL is the only source of truth for users, catalog, carts, inventory, orders, and payment reconciliation.
+- PostgreSQL is the source of truth for commerce state and simulated order/payment status; Neon Auth owns identity state in its managed schema.
 - Foreign keys, unique indexes, checks, and enums enforce invariants in addition to application validation.
-- Transactions protect cart merge, reservation, order creation, webhook reconciliation, cancellation, and inventory release.
-- Use optimistic version columns for cart/order UI conflicts and explicit row locking/raw SQL for inventory reservation if ORM primitives are insufficient.
+- Transactions protect cart merge, inventory consumption, order creation, and allowed order transitions.
+- Use optimistic version columns for cart/order UI conflicts and explicit row locking/conditional updates for inventory consumption if ORM primitives are insufficient.
 - Apply migrations forward in CI and production; never use schema push as the production deployment mechanism.
 - Seed is idempotent and creates deterministic categories, products, offers, stock states, users, and example orders.
 - Backups and point-in-time recovery are mandatory before live money or user data.
@@ -211,7 +209,7 @@ Candidate indexes, added with the slice that uses them:
 - Inventory offer.
 - Cart owner/status and item cart/offer.
 - Order user/created date and unique order number.
-- Payment provider reference and webhook event provider ID.
+- Payment order ID and checkout idempotency key.
 - Review product/status/created date and user/product unique key, only if reviews are implemented.
 
 ## 7. Search architecture
@@ -268,56 +266,38 @@ Resource fetches should include ownership in the query predicate rather than fet
 ### Checkout sequence
 
 ```text
-Customer starts checkout
+Customer confirms clearly labeled no-money checkout
   -> validate verified session, address ownership, cart, offers, prices
   -> transaction:
-       lock relevant inventory
-       create PENDING_PAYMENT order snapshots
-       create expiring inventory reservations
-       record checkout idempotency key
-  -> create Stripe Checkout Session with order ID metadata
-  -> persist provider session reference
-  -> redirect/embed provider UI
-
-Stripe signed event arrives
-  -> verify signature using raw body
-  -> insert unique provider event record
-  -> transaction:
-       lock order
-       validate amount/currency/reference
-       transition payment and order exactly once
-       convert reservation to sold inventory
-       retire purchased cart lines
-  -> acknowledge
+       claim customer-scoped idempotency key and compare request intent
+       lock/conditionally decrement relevant inventory
+       create PLACED order with item, total, and address snapshots
+       create SIMULATED payment record for the server-derived total
+       retire purchased cart lines and append order event
+  -> show confirmation by reading the committed owned order
 ```
 
-The success redirect is advisory. Only a verified provider event can mark payment successful. A scheduled job releases reservations for expired sessions and reconciles stuck provider/order states.
+The confirmation URL is advisory. It cannot mark an order successful; only the committed database transaction can. A transaction failure rolls back all effects. A duplicate key returns the same committed order, while a changed request intent with that key is rejected.
 
 ## 10. Payment boundary
 
-P0 uses a small server-only Stripe module for creating Checkout Sessions and verifying events. Retrieval, expiry, and refunds are added only when an implemented flow needs them; there is no generalized payment framework.
+P0 has no payment-provider integration. Its payment record explicitly describes a simulated transaction, not evidence of a real charge.
 
 Rules:
 
-- Stripe secret keys exist only on the server.
-- Use a deterministic fake for most automated/local tests and Stripe test mode for the integrated demo.
-- Environment validation accepts only test/sandbox credentials for this project and fails startup/deployment if a Stripe key has a live-mode prefix.
-- Webhook reconciliation requires the verified event and referenced payment/session objects to report `livemode: false`; live-mode input is rejected and safely logged.
-- Send Stripe an idempotency key derived from the stored checkout attempt.
-- Store provider IDs, status, amount, currency, timestamps, and safe last-four/brand only if returned and useful. Never store PAN/CVC.
-- Verify webhook signature and compare order ID, currency, and amount to local state.
-- Persist event ID before processing so retries are no-ops.
-- Log Stripe request IDs and local correlation IDs, not payload secrets.
+- No card collection, provider SDK, redirect, callback, webhook, payment credentials, or live-payment configuration.
+- Recompute price, shipping, tax placeholder, and total from trusted data at checkout; store integer minor units and currency.
+- Couple one order, one `SIMULATED` payment record, inventory consumption, cart-line retirement, and an order event in one database transaction.
+- Store the idempotency key hash and request-intent hash, never reusable raw keys or browser-supplied payment status.
+- Log local correlation/order IDs and safe failure codes, not sensitive payloads.
 
-Hosted Checkout is the recommended P0 choice because it is faster and reduces payment UI/security surface. Embedded Checkout can be reconsidered later without changing order semantics if visual fidelity becomes more important.
-
-The storefront and confirmation surfaces must visibly say that checkout is a demo and no money is charged. Demo users use Stripe-provided test payment values, never real payment details.
+The storefront and confirmation surfaces must visibly say that checkout is a demo and no money is charged. Any later external payment path requires a new decision and security review.
 
 ## 11. Security hardening
 
 ### Application
 
-- Strict TypeScript; Zod parsing for forms, params, query strings, webhooks after signature verification, and admin imports.
+- Strict TypeScript; Zod parsing for forms, params, query strings, and admin imports.
 - Server-only modules for database, auth, and provider SDKs.
 - No secrets in `NEXT_PUBLIC_*`; startup environment validation fails closed.
 - Content Security Policy starts in report-only during integration, then enforcing before release.
@@ -356,18 +336,15 @@ Catalog mutations invalidate affected product/category tags. Never cache authori
 
 ## 13. Minimal scheduled work
 
-If required by the implemented checkout flow, one protected scheduled route or host scheduler may:
-
-- Expire inventory reservations and pending checkouts.
-- Reconcile stuck Stripe sessions/orders.
+P0 simulated checkout requires no scheduler. If a later active use case introduces expiring reservations or asynchronous provider state, add only the bounded scheduled work it actually needs.
 
 Email can be sent directly through the provider for the clone, with user-visible retry/recovery where appropriate. There is no queue, worker fleet, or outbox in the baseline. If a concrete correctness problem later requires durable asynchronous work, record that decision then.
 
 ## 14. Observability
 
 - Generate or propagate a request correlation ID.
-- Use structured logs with event name, safe entity IDs, duration, outcome, and provider request ID.
-- Include the correlation/order/provider request IDs needed to debug checkout and webhook flows.
+- Use structured logs with event name, safe entity IDs, duration, and outcome.
+- Include correlation and order IDs needed to debug checkout without recording sensitive input.
 - Use the hosting platform's basic request/error visibility. A separate metrics, tracing, or alerting stack is outside the baseline.
 - Provide a small health endpoint that checks the application and database without exposing secrets.
 
@@ -375,8 +352,8 @@ Email can be sent directly through the provider for the clone, with user-visible
 
 - Pure domain functions are unit-tested without Next.js or the database.
 - Repository/service integration tests run against an isolated PostgreSQL schema/database and exercise real constraints/transactions.
-- Payment/email/rate-limit integration modules have focused tests and deterministic fakes where useful.
-- Stripe webhook fixtures are signed using a test secret; duplicate/out-of-order delivery is covered.
+- Email/rate-limit integration modules have focused tests and deterministic fakes where useful.
+- Checkout transaction tests cover concurrency, duplicate keys, rollback, and tampered totals.
 - Playwright owns only high-value browser journeys and runs with seeded state.
 - Authorization is table-tested for anonymous, owner, other customer, admin, stale session, and unverified user.
 - Accessibility checks combine axe with manual keyboard, zoom, screen-reader spot checks, and reduced motion.
@@ -386,9 +363,9 @@ Email can be sent directly through the provider for the clone, with user-visible
 The detailed living release plan is in `docs/deployment-strategy.md`. Provider choice remains reversible, but environment isolation, controlled migrations, validated secrets, health checks, and rollback evidence are requirements.
 
 ```text
-local     -> isolated Neon development branch, deterministic payment fake, captured email
-preview   -> isolated Neon branch, Stripe test, non-delivering email domain
-public demo-> managed Neon branch, Stripe test, provider secrets, host logs
+local     -> isolated Neon development branch, simulated checkout, captured email
+preview   -> isolated Neon branch, simulated checkout, non-delivering email domain
+public demo-> managed Neon branch, simulated checkout, host logs
 ```
 
 Deployment order:
@@ -399,7 +376,7 @@ Deployment order:
 4. Run smoke/readiness checks.
 5. Enable destructive cleanup only in a later migration after old code is gone.
 
-Rollback application independently when the schema remains backward compatible. Payment webhooks continue to be accepted during partial degradation and are safe to retry.
+Rollback application independently when the schema remains backward compatible. Checkout retries remain idempotent during partial degradation.
 
 ## 17. Evolving build sequence
 
@@ -410,8 +387,8 @@ No product slice begins until its intent, examples, risks, and verification are 
 3. Catalog/search/category/PDP read path.
 4. Auth lifecycle and ownership/role authorization primitives.
 5. Guest/customer cart and merge.
-6. Addresses, checkout order snapshots, inventory reservations.
-7. Stripe test integration and idempotent webhook reconciliation.
+6. Addresses, simulated checkout order snapshots, atomic inventory consumption, and idempotent retry.
+7. Checkout failure/rollback and concurrent-order verification.
 8. Orders/account and admin fulfillment controls.
 9. Security headers, limits, observability, accessibility/performance pass.
 10. P1 only after the P0 acceptance suite is green.
@@ -429,9 +406,7 @@ The first build will not contain microservices, a message broker, event bus, sea
 - [Neon Auth Next.js quickstart](https://neon.com/docs/auth/quick-start/nextjs-api-only)
 - [Prisma with Next.js and PostgreSQL](https://docs.prisma.io/docs/guides/frameworks/nextjs)
 - [PostgreSQL row security](https://www.postgresql.org/docs/18/ddl-rowsecurity.html)
-- [Stripe Checkout quickstarts](https://docs.stripe.com/payments/checkout/quickstarts)
-- [Stripe idempotent requests](https://docs.stripe.com/api/idempotent_requests)
-- [Stripe webhook endpoints](https://docs.stripe.com/api/webhook_endpoints)
+- [PostgreSQL transaction isolation](https://www.postgresql.org/docs/current/transaction-iso.html)
 
 ## 20. Architecture review checklist
 

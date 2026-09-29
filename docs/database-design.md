@@ -8,8 +8,8 @@ ORM/migrations: Prisma candidate, with reviewed SQL migrations for constraints/i
 ## Goals
 
 - Represent one physical-goods storefront correctly without building a generic commerce platform.
-- Keep authentication, authorization ownership, prices, inventory, orders, and payment reconciliation server-authoritative.
-- Make duplicate requests and provider events safe.
+- Keep authentication, authorization ownership, prices, inventory, orders, and simulated payment state server-authoritative.
+- Make duplicate checkout requests safe.
 - Preserve historical order facts when catalog, price, address, or user data changes.
 - Create only P0 tables. P1/P2 schemas are designed when those slices become active.
 
@@ -38,11 +38,9 @@ Offer --1 Inventory
 User or signed guest --1 open Cart --< CartItem >-- Offer
 
 User --< CommerceOrder --< CommerceOrderItem
-CommerceOrder --< InventoryReservation >-- Offer
 CommerceOrder --1 Payment
 CommerceOrder --< OrderEvent
 
-ProviderEvent                 (Stripe event deduplication)
 IdempotencyRecord             (request retry deduplication)
 AuditLog                      (sensitive/admin changes)
 ```
@@ -187,11 +185,10 @@ P0 enforces one active platform offer per variant/currency. Cart/order code stil
 
 - `offer_id` PK/FK offer
 - `available` non-negative integer
-- `reserved` non-negative integer
 - `version` non-negative integer
 - `updated_at`
 
-`available` means immediately reservable units. Reserving atomically moves quantity from `available` to `reserved`; consuming a paid reservation decreases `reserved`; releasing restores it to `available`. The database checks both values remain non-negative.
+`available` means purchasable units. Simulated checkout conditionally decrements it in the same transaction that creates the order. The database checks it remains non-negative.
 
 ## Cart and retry tables
 
@@ -224,7 +221,7 @@ Cart reads always join current offer/inventory data and calculate fresh totals; 
 Used for retry-prone incrementing actions and checkout creation, not every read/update.
 
 - `id` UUID PK
-- `scope` bounded enum/text such as `CART_ADD` or `CHECKOUT_CREATE`
+- `scope` bounded enum/text such as `CART_ADD` or `DEMO_ORDER_PLACE`
 - `key_hash` fixed hash, never log/store an unnecessarily reusable raw key
 - `actor_fingerprint` user/cart reference hash
 - `request_hash` to reject the same key with changed intent
@@ -241,13 +238,12 @@ Used for retry-prone incrementing actions and checkout creation, not every read/
 - `id` UUID PK
 - `order_number` unique random display identifier
 - `user_id` FK indexed
-- `status`: `PENDING_PAYMENT | PAID | PAYMENT_FAILED | EXPIRED | PROCESSING | SHIPPED | DELIVERED | CANCELLED`
+- `status`: `PLACED | PROCESSING | SHIPPED | DELIVERED | CANCELLED`
 - `currency` `char(3)`
 - `subtotal_minor`, `discount_minor`, `shipping_minor`, `tax_minor`, `total_minor`: non-negative integers
 - `shipping_address_snapshot` bounded JSONB with the exact fulfillment fields at purchase time
-- `checkout_idempotency_key_hash` unique
+- `checkout_idempotency_key_hash` unique per customer
 - `version`
-- `payment_expires_at` nullable/indexed
 - timestamps
 
 Check: `total = subtotal - discount + shipping + tax`, with discount not exceeding the permitted base. The service controls allowed transitions; every transition appends an order event and sensitive/admin transitions also append an audit log.
@@ -263,49 +259,18 @@ Check: `total = subtotal - discount + shipping + tax`, with discount not exceedi
 
 Historical display uses snapshots, not mutable catalog joins. Source IDs remain for internal traceability.
 
-### `inventory_reservation`
-
-- `id` UUID PK
-- `order_id` FK indexed
-- `offer_id` FK indexed
-- `quantity` positive integer
-- `status`: `ACTIVE | CONSUMED | RELEASED`
-- `expires_at` indexed
-- timestamps
-- unique `(order_id, offer_id)`
-
-Expiration is determined by `expires_at`, not by whether a cron job has already cleaned the row.
-
 ### `payment`
 
-P0 permits only `FAKE` or `STRIPE_TEST` providers.
+P0 records the demo outcome, not a charge or a provider authorization.
 
 - `id` UUID PK
 - `order_id` unique FK
-- `provider`: `FAKE | STRIPE_TEST`
-- `status`: `PENDING | SUCCEEDED | FAILED | EXPIRED`
+- `method`: `SIMULATED`
+- `status`: `SIMULATED_SUCCESS`
 - `amount_minor`, `currency`
-- `provider_session_id` nullable unique
-- `provider_payment_id` nullable unique
-- optional safe display fields `brand`, `last4` only when useful and returned by Stripe
-- provider/request correlation ID, timestamps
+- timestamps
 
-Constraint: provider can never be a live Stripe mode. Raw PAN/CVC and full provider objects are never stored.
-
-### `provider_event`
-
-- `id` UUID PK
-- `provider`: initially `STRIPE_TEST`
-- `provider_event_id` unique
-- `event_type`
-- `livemode` boolean, must be false for processable events
-- safe referenced object/order identifiers
-- `payload_hash` for diagnostics/deduplication; no full raw payload by default
-- `status`: `RECEIVED | PROCESSED | DUPLICATE | REJECTED | FAILED_RETRYABLE`
-- safe `failure_code` optional
-- `received_at`, `processed_at`
-
-The unique provider event ID is inserted before effects are applied. Permanent mismatch/live-mode input is recorded rejected; transient transaction failure remains retryable.
+Constraint: method is always `SIMULATED`; amount/currency match the order. No PAN/CVC, provider IDs, or full payment credentials are stored.
 
 ### `order_event`
 
@@ -314,7 +279,7 @@ The unique provider event ID is inserted before effects are applied. Permanent m
 - `from_status` nullable
 - `to_status`
 - `actor_user_id` nullable FK
-- `source`: `SYSTEM | CUSTOMER | ADMIN | STRIPE_TEST`
+- `source`: `SYSTEM | CUSTOMER | ADMIN`
 - safe customer-visible message/key
 - `created_at`
 
@@ -356,26 +321,14 @@ They receive migrations only when their requirement moves into an active slice.
 4. Mark the guest cart `MERGED` and increment the customer cart version.
 5. Commit once.
 
-### Start checkout
+### Place demo order
 
 1. Resolve verified user, owned address, and open cart.
 2. Re-read active offers, authoritative prices, limits, and inventory.
-3. In one transaction, claim the idempotency record, conditionally reserve every offer, create the pending order/items/address snapshot/reservations/payment, and mark the attempt completed.
-4. Commit before calling Stripe.
-5. Create/retrieve the Stripe test Checkout Session using the stored attempt/order ID and persist the provider session reference.
+3. In one transaction, claim the customer-scoped idempotency key and compare request intent, conditionally decrement every offer's stock, create the PLACED order/items/address snapshot and SIMULATED payment, retire purchased cart lines, append an order event, and mark the attempt completed.
+4. Commit, then return the owned order number. A duplicate key with matching intent reads the same result; changed intent is a conflict. Any failure rolls back all effects.
 
-No network/provider call occurs inside a database transaction. If Stripe is unavailable, the pending local attempt can be resumed or expired without creating another order.
-
-### Stripe test webhook
-
-1. Verify signature on the raw body and reject live mode.
-2. Insert the unique provider event or return success for a duplicate.
-3. In one transaction, lock the owned order/payment, match order/amount/currency, apply one allowed state transition, consume reservations, and mark purchased cart lines/order events.
-4. Mark the provider event processed and commit.
-
-### Expire reservation
-
-In bounded batches, claim active reservations whose `expires_at <= now()`, atomically restore `available`, reduce `reserved`, mark reservations released, and transition eligible pending orders to `EXPIRED`. Repetition is a no-op.
+No network/provider call or scheduled reservation cleanup exists in P0 checkout.
 
 ## Delete and retention behavior
 
@@ -398,10 +351,10 @@ In bounded batches, claim active reservations whose `expires_at <= now()`, atomi
 
 - Empty database migrates and seeds cleanly twice.
 - Foreign-key, uniqueness, check, partial-index, and ownership behavior have integration tests.
-- Concurrent reservation tests prove inventory cannot become negative.
-- Duplicate cart/checkout keys and Stripe event IDs prove one effect.
+- Concurrent checkout tests prove inventory cannot become negative.
+- Duplicate cart/checkout keys prove one effect; changed-intent keys conflict.
 - Address/catalog edits prove order snapshots remain unchanged.
-- Query plans for search, open cart, owned order list/detail, expiry scan, and provider-event lookup use intended indexes on representative seed data.
+- Query plans for search, open cart, owned order list/detail, and idempotency lookup use intended indexes on representative seed data.
 
 ## Primary guidance
 

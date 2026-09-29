@@ -29,7 +29,7 @@ Excluded from this product: Prime membership as a subscription, Prime Video, Ama
 
 ## Product thesis
 
-A strong commerce clone is convincing because the state transitions are real, not because every screen is present. Search must return seeded catalog data, cart totals must be derived on the server, inventory must be protected from races, payment must be reconciled through signed webhooks, and users must only be able to access their own account data.
+A strong commerce clone is convincing because the state transitions are real, not because every screen is present. Search must return seeded catalog data, cart totals must be derived on the server, inventory must be protected from races, simulated purchases must commit atomically and idempotently, and users must only be able to access their own account data.
 
 We will borrow Amazon's information hierarchy and shopping mental model, then improve areas where the original is visibly dense or inaccessible:
 
@@ -66,11 +66,11 @@ A third-party seller is not an active user of this clone. The storefront may eve
 
 The first release is successful when:
 
-- A new user can register, verify/sign in, shop, pay with a Stripe test method, and see the resulting order.
+- A new user can register, verify/sign in, shop, place a clearly labeled no-money demo order, and see the resulting order.
 - A guest can browse, search, filter, and maintain a cart; the cart merges safely after sign-in.
 - Prices, inventory, discounts, tax/shipping placeholders, and order totals are never trusted from the browser.
 - A customer cannot read or mutate another customer's addresses, cart, list, reviews, or orders.
-- Retrying checkout or receiving a duplicate payment webhook cannot create a duplicate charge or order.
+- Retrying checkout cannot create a duplicate order or consume inventory twice.
 - The main journey works at 360 px, 768 px, 1280 px, and keyboard-only.
 - Seed data makes every core state demoable without depending on a third-party catalog API.
 
@@ -81,7 +81,7 @@ The first release is successful when:
 - Real carrier purchasing or live tracking integrations.
 - Multi-country tax compliance, currency conversion, localization, or international shipping.
 - Sophisticated ML recommendations, ad auctions, visual search, or an AI shopping assistant.
-- Real customer charges. All payment work remains in Stripe test mode until an explicit production-readiness review.
+- Real customer charges, card entry, and external payment-provider integration. A later payment feature requires a separate decision and security review.
 - Pixel-for-pixel copying of Amazon branding, copy, proprietary images, or trademarks.
 
 ## Principles that constrain implementation
@@ -93,7 +93,7 @@ The first release is successful when:
 5. **Accessible by construction.** Native controls, landmarks, labels, focus visibility, keyboard operation, and zoom support are requirements, not polish.
 6. **One lightweight application.** Use a small number of clear folders/modules inside one deployable application and one database. Microservices and distributed infrastructure are outside the clone's intended scope, not a deferred default.
 7. **Deterministic demos.** The app ships with a curated catalog, users, orders, and inventory states that make every acceptance path reproducible.
-8. **Honest commerce.** Clearly label simulated delivery dates, test payments, discounts, low-stock states, and personalized modules.
+8. **Honest commerce.** Clearly label simulated checkout and delivery dates, discounts, low-stock states, and personalized modules.
 
 ## Discovery findings
 

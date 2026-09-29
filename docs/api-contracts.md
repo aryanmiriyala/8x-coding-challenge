@@ -11,7 +11,7 @@ Neon's Data API may be enabled on the project and supply `NEON_DATA_API_URL`. P0
 
 - Server Components call server-only query/use-case functions directly.
 - Same-origin forms and mutations use thin Server Actions that validate input and call the same use-case layer.
-- Route Handlers exist only for genuine HTTP boundaries: the Neon Auth proxy, Stripe webhooks, health/readiness, protected scheduled cleanup, and a later autocomplete endpoint if it becomes active.
+- Route Handlers exist only for genuine HTTP boundaries: the Neon Auth proxy, health/readiness, and a later autocomplete endpoint if it becomes active.
 - Domain/use-case functions do not import React, Next.js request objects, or provider SDKs.
 
 Server Actions remain remotely invocable POST boundaries. Each action authenticates, authorizes, validates, and returns a minimal DTO; being called from our own UI does not make it trusted.
@@ -140,30 +140,21 @@ Authentication registration, verification, sign-in, sign-out, recovery, and auth
 
 | Use case | Input | Important behavior | Result |
 | --- | --- | --- | --- |
-| `startCheckout` | Owned `addressId`, `idempotencyKey` | Verified user; reprice cart; reserve inventory and create pending order transactionally; create Stripe test session after local commit | Owned pending order number plus Stripe test redirect URL |
-| `getCheckoutStatus` | Owned order number | Never trusts return URL; reads reconciled local state | Processing/succeeded/failed status DTO |
+| `placeDemoOrder` | Owned `addressId`, `idempotencyKey` | Verified user; reprice cart; atomically decrement inventory, create order/payment snapshots, consume purchased cart lines; deduplicate retries | Owned placed demo order number |
+| `getCheckoutStatus` | Owned order number | Never trusts URL parameters; reads committed local state | Placed/not-found status DTO |
 | `advanceOrderStatus` | Order number, target status, expected version | Admin role; allowed transition only; append audit/timeline event | Updated operational order DTO |
 
-`startCheckout` stores the local attempt before calling Stripe. If Stripe creation fails, the same idempotency key resumes or returns the same local attempt rather than creating a second order. Browser input never includes authoritative amounts.
+`placeDemoOrder` is one database transaction. The same customer/key/intent returns the same order, changed intent with the same key is a conflict, and an aborted transaction leaves stock/cart unchanged. Browser input never includes authoritative amounts or payment status.
 
 ## HTTP Route Handlers
 
 | Method and path | Caller | Contract |
 | --- | --- | --- |
 | `GET/POST/PUT/DELETE/PATCH /api/auth/[...path]` | Browser/auth emails | `@neondatabase/auth` Next.js handler proxy with branch Auth URL, trusted origins, secure cookie cache, and safe redirect policy |
-| `POST /api/webhooks/stripe` | Stripe sandbox | Read raw body, verify environment-specific signature, reject `livemode: true`, deduplicate event ID, reconcile matching local order/amount/currency, return quickly |
 | `GET /api/health` | Host/smoke checks | `200 {"status":"ok"}` when app/database are ready; generic `503` otherwise; no config/version/query details |
-| `GET /api/internal/reservations/expire` | Vercel Cron/manual operator | Require `Authorization: Bearer <CRON_SECRET>`; idempotently release expired reservations in a bounded batch; return counts only |
 | `GET /api/search/suggestions` | Public, P1 only | Bounded query, rate limit, active products/categories only, accessible combobox DTO |
 
-Stripe webhook response behavior:
-
-- Invalid signature or malformed body: `400`; no state change.
-- Valid duplicate event: `200`; no duplicate effects.
-- Valid event with live mode or mismatched order/amount/currency: record a safe rejected/quarantined status and return `200` so permanent bad input is not retried forever.
-- Temporary database failure: `500` so Stripe can retry.
-
-The scheduled cleanup route is not required for inventory correctness. Availability calculations treat an expired reservation as expired; the route performs bounded cleanup.
+There is no P0 payment webhook or reservation-cleanup route. Simulated checkout has no asynchronous provider state.
 
 ## Authorization matrix at the contract boundary
 
@@ -174,7 +165,6 @@ The scheduled cleanup route is not required for inventory correctness. Availabil
 | Address/account/order read | No | Own rows only | Own rows unless explicitly using admin operation |
 | Checkout | No | Verified user and owned cart/address | Same customer checkout rules |
 | Catalog/order operations | No | No | Explicit role plus allowed transition |
-| Webhook/cron | No session authority | No | Provider signature or cron secret, not admin cookie |
 
 Proxy/middleware may redirect for UX but is never the secure authorization layer.
 
@@ -190,15 +180,15 @@ Proxy/middleware may redirect for UX but is never the secure authorization layer
 
 P0 has no public third-party API consumer, so `/api/v1` and OpenAPI generation would be ceremony without value. TypeScript/Zod contracts, stable error codes, integration tests, and this document are the contract. If a mobile client, seller API, or external consumer becomes active, introduce an explicit versioned HTTP API and OpenAPI document through a new decision.
 
-Pin the Stripe API version in server configuration and fixtures. Provider API changes must not silently redefine local order/payment semantics.
+Any later payment-provider integration needs an explicit contract and decision; P0 has no provider API version.
 
 ## Contract verification
 
 - Schema tests for valid, boundary, and unknown input.
 - Authorization table tests for anonymous, owner, other customer, admin, stale session, and unverified user.
 - Real PostgreSQL integration tests for ownership predicates, constraints, transactions, conflicts, and idempotency.
-- Signed Stripe test events for success, duplicate, delayed, out-of-order, invalid signature, mismatched values, and live-mode rejection.
-- HTTP tests for Origin/Host, cookies, headers, rate limits, health disclosure, and cron authorization.
+- Concurrent simulated checkout tests for one effect, changed-intent conflict, stock conflict, and rollback.
+- HTTP tests for Origin/Host, cookies, headers, rate limits, and health disclosure.
 - Playwright only for high-value customer/admin journeys.
 
 ## Primary guidance
@@ -208,4 +198,3 @@ Pin the Stripe API version in server configuration and fixtures. Provider API ch
 - [Next.js Route Handlers](https://nextjs.org/docs/app/getting-started/route-handlers)
 - [Next.js Backend for Frontend guide](https://nextjs.org/docs/app/guides/backend-for-frontend)
 - [Prisma transactions and idempotency](https://docs.prisma.io/docs/orm/v7/prisma-client/queries/transactions)
-- [Stripe webhook documentation](https://docs.stripe.com/webhooks)
