@@ -7,6 +7,8 @@ Applies to: NAV, HOME, CAT, SEARCH, PDP, CART, AUTH, ACCT, CHECK, ORDER, ADMIN, 
 
 The clone is one Next.js application, so P0 will not build a second general-purpose REST or GraphQL backend for its own pages.
 
+Neon's Data API may be enabled on the project and supply `NEON_DATA_API_URL`. P0 does not consume it: the application reads and mutates PostgreSQL from server-only use cases. A browser-facing Data API consumer would require a separate decision and verified row-level security policies.
+
 - Server Components call server-only query/use-case functions directly.
 - Same-origin forms and mutations use thin Server Actions that validate input and call the same use-case layer.
 - Route Handlers exist only for genuine HTTP boundaries: the Neon Auth proxy, Stripe webhooks, health/readiness, protected scheduled cleanup, and a later autocomplete endpoint if it becomes active.
