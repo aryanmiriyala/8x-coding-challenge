@@ -4,6 +4,12 @@
 
 Read `docs/project-status.md` before acting. While the phase is `discovery`, do not scaffold the application, install dependencies, create a database, or implement product code unless the user explicitly advances the project into implementation.
 
+## Provider account boundary
+
+- Work only in the owner's personal Vercel Hobby scope and existing Neon Free project/organization for this repository. Do not touch other Vercel teams, paid scopes, or unrelated Neon projects.
+- Resolve the exact account, project, and branch with read-only checks before any provider mutation. If the target cannot be verified, stop and ask; never rely on a CLI default scope.
+- Do not create a second Neon project, install a Vercel-managed Neon resource, upgrade a plan, or make a deployment public without the owner's explicit direction. Preserve existing ignored environment values during linking.
+
 ## Required context order
 
 For work that changes product behavior or architecture, read:

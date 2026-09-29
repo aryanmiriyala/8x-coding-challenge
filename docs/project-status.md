@@ -28,7 +28,7 @@ Build one Amazon.com-style physical-goods retail storefront. Separate Amazon bus
 - `NEON_DATA_API_URL` was not saved in the file at inspection, so a blank optional slot was added. P0 does not require the Data API.
 - A read-only S3 bucket listing using the configured Neon endpoint and credentials succeeded but returned zero buckets. The sample `assets` bucket does not yet exist on that endpoint/branch; uploads cannot succeed until it is created.
 - No application scaffold or storage SDK dependency has been added. Runtime-managed files remain deferred until an active slice needs them.
-- Neon and Vercel CLIs are installed globally for the current Node installation. A human must authenticate the intended accounts before any CLI linking or deployment; do not run interactive login unattended.
+- Neon and Vercel CLIs are installed and authenticated. Read-only checks found one Vercel Hobby scope (and another scope that is out of bounds) and one Neon Free organization. No repository-to-provider link has been created; the exact existing Neon project/branch and Hobby project still need to be matched before any mutation. Authentication alone does not authorize linking or deployment.
 
 ## Known evidence gap
 
@@ -42,7 +42,7 @@ An interactive browser session was unavailable, so fresh screenshots and signed-
 | Q-002 | Build commerce primitives ourselves or adopt a headless backend? | Before schema/scaffold | Lightweight custom monolith; use external platforms as domain references, not baseline dependencies |
 | Q-003 | Prisma or a lighter SQL/query layer for transaction/locking control? | Database scaffold | Prisma, conditional on an inventory-locking spike |
 | Q-004 | Better Auth or managed identity provider? | Auth slice | Resolved as a trial: Neon Auth (Managed Better Auth), enabled by the owner; validate in Slice 0 |
-| Q-005 | Stripe hosted or embedded Checkout? | Checkout slice | Hosted for speed/security; embedded if visual fidelity is a scored criterion |
+| Q-005 | Does dummy-only checkout need Stripe at all? | Before checkout contract is locked | Recommend a server-authoritative simulated payment; remove Stripe from P0 if the owner confirms |
 | Q-006 | Deployment, database, and email providers? | Slice 0 preview/application email | Trial Vercel + directly owned Neon integration; Neon handles auth email; defer application email provider |
 | Q-007 | Final brand and image licensing strategy? | Visual lock/seed | Original brand plus generated/licensed product images |
 | Q-008 | Do product images need runtime/admin uploads in the first release? | Image-management slice | Static app assets for the initial catalog; Neon Object Storage is selected when uploads/generated files become active |

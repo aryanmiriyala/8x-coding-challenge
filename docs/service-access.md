@@ -12,12 +12,12 @@ Rule: Never place credentials in Git, documentation, screenshots, logs, fixtures
 | GitHub | Repository, pull requests, CI, Vercel source integration | Personal or project organization; enable MFA/passkey; no shared password |
 | Vercel | Next.js preview and public-demo deployment | Connect GitHub directly so routine deploys need no stored Vercel token |
 | Neon | Managed PostgreSQL, Managed Better Auth, and isolated preview branches | Use the directly owned project with Auth already enabled, then connect its Vercel integration; keep database ownership independent of the application host |
-| Stripe | Sandbox Checkout and signed test webhooks | Sandbox/test access only; do not enter live keys, enable live mode, or connect payout/bank details for this clone |
 
 ### Create only when the dependent slice starts
 
 | Service | Needed when | Notes |
 | --- | --- | --- |
+| Stripe (optional) | Only if an explicit checkout decision requires an external payment-processor demo | Dummy-only checkout likely does not need it; do not create or connect a Stripe account for Slice 0 |
 | Custom SMTP and/or application email provider | Production-like auth email or order email becomes active | Neon shared SMTP is sufficient for development auth codes. Configure custom SMTP before a production-like auth release; add Resend or another provider only for application-owned messages when needed |
 | Neon Object Storage | Runtime-managed catalog images, generated assets, or user uploads become an active use case | Selected S3-compatible store for this Neon-backed app because buckets and objects branch with PostgreSQL. Declare only required buckets through `neon.ts`; credentials are injected by Neon per branch |
 | Domain registrar/DNS | We want branded public URLs and real email delivery | A `vercel.app` URL is sufficient for early previews; a controlled domain is useful before public auth email |
@@ -45,6 +45,7 @@ For this clone:
 
 - GitHub connects to Vercel directly; CI should not need a personal Vercel token for normal deployments.
 - The Neon/Vercel integration supplies environment-specific database/Auth configuration and creates isolated preview branches.
+- Use the existing Neon-owned Free project through the existing-account/Connected Accounts integration in the personal Vercel Hobby scope. Do not choose the flow that provisions a new Vercel-managed Neon account or resource. Verify the exact Vercel scope and Neon project before linking; never rely on CLI defaults.
 - Application queries use pooled `DATABASE_URL`; migrations and administrative tasks use direct `DATABASE_URL_UNPOOLED`. Both must target the same branch. A Neon management API key is unnecessary unless we automate branch lifecycle outside the integration; if later needed, use a project-scoped key.
 - Neon Auth supplies each branch's `NEON_AUTH_BASE_URL`. The application supplies a unique `NEON_AUTH_COOKIE_SECRET`; trusted preview/demo origins are registered in Neon.
 - An available `NEON_DATA_API_URL` is provider configuration, not a requirement for the P0 Next.js server path. Do not add browser database access without an explicit use case and tested row-level security policies.
