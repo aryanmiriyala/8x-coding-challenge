@@ -33,7 +33,7 @@ This checklist makes hidden setup work visible before product code begins. It is
 - [x] Generate a 256-bit `NEON_AUTH_COOKIE_SECRET` in the ignored local environment; still generate a distinct value for each deployed environment and never commit one.
 - [x] Treat `NEON_DATA_API_URL` as optional provider configuration; local value is branch-correct but remains unused. Decide on a concrete Data API use case and row-level security model before calling it from a browser.
 - [x] Confirm pooled application and direct migration URLs address the same branch; current local URLs match `vercel-dev`.
-- [ ] Register the exact preview/public-demo origins with Neon Auth; keep login, recovery, callback, `/api/auth`, and static assets outside protected-route matchers.
+- [ ] Register the exact preview/public-demo origins with Neon Auth after app URLs exist; keep login, recovery, callback, `/api/auth`, and static assets outside protected-route matchers.
 - [x] Establish an isolated Neon development branch for local commerce and Managed Auth. `vercel-dev` has Managed Auth configured. Automated tests still need disposable branches encoded in scripts when implementation begins.
 - [ ] Validate Managed Auth sign-up, verification, sign-in, sign-out, recovery, session restoration, and direct protected-operation denial.
 - [ ] Validate the managed-schema relationship strategy before adding app-owned foreign keys to `neon_auth.user`.
@@ -42,7 +42,7 @@ This checklist makes hidden setup work visible before product code begins. It is
 
 - [x] GitHub `main` is linked to the existing Vercel Hobby project, verified from deployment metadata. The current deployments fail because no app scaffold exists; no healthy deployment is claimed.
 - [x] Connect the Vercel Hobby project to the existing Neon-owned Free project enough for database env injection; do not provision a second Vercel-managed Neon resource.
-- [ ] Confirm Neon-injected variable names and branch targets by inspection. Local env is verified; Vercel envs need refresh after dev credential rotation and before deployment.
+- [x] Confirm Neon-injected variable names and branch targets by inspection. Local env and Vercel Development/Production envs are branch-targeted; app runtime smoke still waits for a scaffold.
 - [ ] Define Local, Test, Preview, and Public Demo environment boundaries; Preview and Demo must not share data, auth sessions, or secrets.
 - [ ] Confirm Node/Next.js runtime, database pooling, build output, secure cookies, trusted origins, health checks, logs, rollback, and spending controls in a minimal preview.
 - [ ] Establish one controlled migration step using the direct URL; do not run migrations concurrently at application startup.

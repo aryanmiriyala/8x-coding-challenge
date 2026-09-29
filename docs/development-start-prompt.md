@@ -28,7 +28,7 @@ Current provider evidence:
 - Neon Auth is configured on production and vercel-dev. vercel-dev JWKS returned HTTP 200 with one key.
 - Local NEON_DATA_API_URL uses the vercel-dev apirest host. P0 still does not use the Data API.
 - Neon Object Storage buckets exist on production and vercel-dev: catalog-assets is public_read; private-uploads is private. Local vercel-dev put/head/delete smoke passed for both buckets.
-- Vercel envs still need refresh before deployment, especially after vercel-dev owner-role rotation. Production owner-role rotation also needs explicit approval because a stale production DB URL was exposed in tool output.
+- Vercel Development and Production envs have been refreshed. Development targets vercel-dev; Production targets production. Production secret values are not readable back through Vercel env pull.
 - No Resend key is needed for P0. Keep application-owned email in capture mode unless a later slice explicitly chooses a provider.
 
 First task for the implementation chat:
@@ -36,8 +36,8 @@ First task for the implementation chat:
 2. Re-read intent.md, spec.md, architecture.md, docs/project-status.md, docs/pre-build-readiness.md, docs/service-access.md, docs/deployment-strategy.md, docs/database-design.md, docs/api-contracts.md, docs/use-cases.md, docs/traceability.md, docs/risks.md, and relevant ADRs only as needed.
 3. Resolve the Slice 0 gate before product code:
    - Decide whether vercel-dev is the local/preview branch.
-   - Refresh Vercel envs and trusted Auth origins before relying on deployed auth/storage.
-   - Add distinct 256-bit NEON_AUTH_COOKIE_SECRET values to each deployed runtime environment.
+   - Register trusted Auth origins before relying on deployed auth.
+   - Keep distinct 256-bit NEON_AUTH_COOKIE_SECRET values per deployed runtime.
    - Do not run migrations or seeds against production; local writes use vercel-dev.
 4. Identify requirement/use-case IDs, examples, failure paths, verification commands, and first commit boundaries before scaffolding.
 5. Then scaffold the smallest Next.js skeleton that proves runtime/build, env validation, health/readiness, and Neon connectivity without adding product breadth.

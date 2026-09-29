@@ -1,6 +1,6 @@
 # Neon/Vercel Integration Smoke Check
 
-Status: Partial; provider checks refreshed 2026-09-29 after local/dev cleanup
+Status: Partial; provider checks refreshed 2026-09-29 after Vercel env refresh
 Scope: Existing Neon Free project `8x-amazon-clone` and personal Vercel Hobby project `8x-coding-challenge` only
 
 ## Results
@@ -19,17 +19,15 @@ Scope: Existing Neon Free project `8x-amazon-clone` and personal Vercel Hobby pr
 | GitHub to Vercel | Deployment metadata references this repository's `main` | Pass for source linkage |
 | Vercel production deploy | Two listed deployments are `ERROR`; latest build says `No Next.js version detected` | Fail as an app smoke; expected while repository is documentation-only |
 | Neon database envs in Vercel | `vercel env ls` lists `DATABASE_URL` and `DATABASE_URL_UNPOOLED` for Development and Production; temp env pulls show Development targets `ep-cool-shape...` and Production targets `ep-autumn-rain...` | Pass for database env injection and branch targeting |
-| Neon Auth/storage envs in Vercel | Earlier temp Vercel env pulls showed database URLs only. Local/dev credentials were later rotated, so Vercel Development database envs likely need refresh before any healthy app deployment | Fail for deployed runtime configuration |
+| Neon Auth/storage envs in Vercel | Vercel Development and Production envs were refreshed after credential rotation. Temp pulls show branch-correct DB/Auth/Data API/storage hosts; Production secret values return `[SENSITIVE]` placeholders as expected | Pass for variable presence and branch targeting; runtime app smoke still blocked by missing scaffold |
 | Vercel marketplace installation list | `vercel integration installations --scope aryans-projects-4cd8154d` reports no marketplace installations | Observation only; database env injection exists despite no marketplace installation being listed |
 
-No app schema, Auth users, provider links, Vercel settings, or deployments were created or changed by these checks. Provider mutations were limited to the verified existing Neon project/branches: Object Storage bucket creation, `vercel-dev` Auth provisioning, removing the empty cloned `neon_auth` schema on `vercel-dev`, and rotating the `vercel-dev` owner-role password after a dev connection string was exposed in tool output. The ignored local file was updated without committing secret values. Test output intentionally excludes current credentials and full connection strings.
+No app schema, Auth users, provider links, or deployments were created or changed by these checks. Provider mutations were limited to the verified existing Neon project/branches and Vercel Hobby project: Object Storage bucket creation, `vercel-dev` Auth provisioning, removing the empty cloned `neon_auth` schema on `vercel-dev`, rotating the `vercel-dev` owner-role password after a dev connection string exposure, rotating the production owner-role password after a stale production DB URL exposure, and refreshing Vercel Development/Production env vars. The ignored local file was updated without committing secret values. Test output intentionally excludes current credentials and full connection strings.
 
 ## Next flexible gate
 
-1. Get explicit approval to rotate the exposed production owner-role password and refresh Vercel Production/Development database envs. A broad bundled update was blocked by the execution policy, so this needs a separate confirmed action.
-2. Add/refresh Vercel Auth/storage/Data API/cookie-secret envs after the production-rotation decision. Local `vercel-dev` env is ready; deployed runtime env is not.
-3. Register the deployed origins as trusted Neon Auth domains once the app URLs exist.
-4. After the owner authorizes Slice 0 and an application skeleton exists, run a healthy preview build, database-readiness check, Neon Auth lifecycle test, and branch-isolation test. The current documentation-only Vercel deployment cannot prove runtime integration.
+1. Register the deployed origins as trusted Neon Auth domains once the app URLs exist.
+2. After the owner authorizes Slice 0 and an application skeleton exists, run a healthy preview build, database-readiness check, Neon Auth lifecycle test, and branch-isolation test. The current documentation-only Vercel deployment cannot prove runtime integration.
 
 ## Guidance
 
