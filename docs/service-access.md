@@ -47,6 +47,9 @@ For this clone:
 - The Neon/Vercel integration supplies environment-specific database/Auth configuration and creates isolated preview branches.
 - Application queries use pooled `DATABASE_URL`; migrations and administrative tasks use direct `DATABASE_URL_UNPOOLED`. Both must target the same branch. A Neon management API key is unnecessary unless we automate branch lifecycle outside the integration; if later needed, use a project-scoped key.
 - Neon Auth supplies each branch's `NEON_AUTH_BASE_URL`. The application supplies a unique `NEON_AUTH_COOKIE_SECRET`; trusted preview/demo origins are registered in Neon.
+- An available `NEON_DATA_API_URL` is provider configuration, not a requirement for the P0 Next.js server path. Do not add browser database access without an explicit use case and tested row-level security policies.
+- Neon Object Storage credentials alone do not create a bucket. Before using an `assets` bucket, confirm it exists on the branch targeted by `AWS_ENDPOINT_URL_S3` and choose `private` or `public_read` based on the files it will hold.
+- Next.js loads `.env.local` itself. A standalone Node script must load that file explicitly (for example, `node --env-file=.env.local script.mjs`); plain `dotenv/config` defaults to `.env`. Treat presigned object URLs as bearer credentials and do not print them to application or CI logs.
 - Stripe uses a sandbox restricted key where its permissions cover the implemented Checkout operations; otherwise use the standard test secret temporarily. A webhook signing secret is separate and unique per endpoint/environment.
 - Custom SMTP or a later application email provider uses a sending-only, domain-restricted credential when enabled.
 - Coding agents do not receive dashboard passwords, recovery codes, broad personal tokens, or live-payment credentials.
@@ -98,6 +101,7 @@ Names are hypotheses until the scaffold establishes the executable environment s
 | `DATABASE_URL_UNPOOLED` | Yes | Local/test/preview/demo | Direct PostgreSQL connection for migrations, dumps, and admin tasks; same branch as pooled URL |
 | `NEON_AUTH_BASE_URL` | No | Auth test/preview/demo | Branch Managed Auth URL including its path; supplied by Neon |
 | `NEON_AUTH_COOKIE_SECRET` | Yes | Auth test/preview/demo | 32+ character Next.js cached-session cookie secret; unique per environment and not injected by Neon |
+| `NEON_DATA_API_URL` | No | Only if the Data API is enabled | Branch Data API endpoint; optional and unused by the P0 server-side data path |
 | `AWS_ACCESS_KEY_ID` | Yes | Local/preview/demo only when Neon Object Storage is provisioned | Branch-scoped Neon S3 credential; generated/injected by Neon, keep in ignored local or managed environment storage |
 | `AWS_SECRET_ACCESS_KEY` | Yes | Local/preview/demo only when Neon Object Storage is provisioned | Branch-scoped Neon S3 secret; generated/injected by Neon, never commit or expose to browser code |
 | `AWS_ENDPOINT_URL_S3` | No | Local/preview/demo only when Neon Object Storage is provisioned | Branch-specific S3 endpoint supplied by Neon; the S3 client must use path-style addressing |
@@ -129,7 +133,7 @@ If a value enters Git or chat, treat it as compromised immediately. Revoke/rotat
 - [ ] Neon preview and public-demo credentials/data are isolated.
 - [ ] Neon Auth is enabled on the intended AWS project/branches; Auth is not combined with incompatible IP Allow or Private Networking settings.
 - [ ] Each deployed origin is trusted in Neon and each environment has its own cookie secret.
-- [ ] If runtime file storage is in the active slice, confirm Object Storage region availability, declare the minimal bucket set, and verify branch isolation. Otherwise keep images in app static assets and leave `AWS_*` values unset.
+- [ ] If runtime file storage is in the active slice, confirm Object Storage region availability, create/declare the minimal bucket set, and verify branch isolation. If credentials are already present, they do not prove a bucket exists. Otherwise keep images in app static assets.
 - [ ] Stripe is sandbox-only and live credentials are technically rejected.
 - [ ] `.env.example`, ignore rules, and executable environment validation exist before secrets are introduced.
 - [ ] Deployed secrets use write-only/sensitive storage and least privilege.
