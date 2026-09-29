@@ -19,15 +19,16 @@ Build one Amazon.com-style physical-goods retail storefront. Separate Amazon bus
 - Lightweight environment, migration, deployment, rollback, and post-release verification strategy.
 - Concrete service-account/secret placement, minimal HTTP/use-case contracts, and P0 relational schema/transaction design.
 - A flexible pre-build readiness gate covering repository, Neon Auth/database, Vercel, CI, seed/assets, and technical-spike evidence.
-- A deferred file-storage direction: keep seed imagery static for now; prefer Neon Object Storage if runtime-managed assets become active.
+- A selected file-storage provider: keep seed imagery static for now; use Neon Object Storage if runtime-managed assets become active.
 - Public visual-reference links and a manual authenticated-flow capture matrix.
 
 ## Provider readiness snapshot (2026-09-29)
 
-- The ignored `.env.local` contains the database, Auth base URL, and S3 connection variables. The Auth cookie secret remains blank; no secret values were copied into documentation or Git.
+- The ignored `.env.local` now has pooled and direct connections for the same Neon branch, plus the Auth base URL and Neon Object Storage connection variables. Independent 256-bit Auth-cookie and cron secrets were generated locally without printing values; the file is owner-readable only. Deployed environments still need their own secrets.
 - `NEON_DATA_API_URL` was not saved in the file at inspection, so a blank optional slot was added. P0 does not require the Data API.
 - A read-only S3 bucket listing using the configured Neon endpoint and credentials succeeded but returned zero buckets. The sample `assets` bucket does not yet exist on that endpoint/branch; uploads cannot succeed until it is created.
 - No application scaffold or storage SDK dependency has been added. Runtime-managed files remain deferred until an active slice needs them.
+- Neon and Vercel CLIs are installed globally for the current Node installation. A human must authenticate the intended accounts before any CLI linking or deployment; do not run interactive login unattended.
 
 ## Known evidence gap
 
@@ -44,7 +45,7 @@ An interactive browser session was unavailable, so fresh screenshots and signed-
 | Q-005 | Stripe hosted or embedded Checkout? | Checkout slice | Hosted for speed/security; embedded if visual fidelity is a scored criterion |
 | Q-006 | Deployment, database, and email providers? | Slice 0 preview/application email | Trial Vercel + directly owned Neon integration; Neon handles auth email; defer application email provider |
 | Q-007 | Final brand and image licensing strategy? | Visual lock/seed | Original brand plus generated/licensed product images |
-| Q-008 | Do product images need runtime/admin uploads in the first release? | Image-management slice | Static app assets for the initial catalog; Neon Object Storage if a demonstrated slice needs uploads/generated files |
+| Q-008 | Do product images need runtime/admin uploads in the first release? | Image-management slice | Static app assets for the initial catalog; Neon Object Storage is selected when uploads/generated files become active |
 
 ## Next flexible checkpoint
 
