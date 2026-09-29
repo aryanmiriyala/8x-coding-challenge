@@ -21,7 +21,7 @@ This checklist makes hidden setup work visible before product code begins. It is
 - [ ] CI design includes format/lint, strict types, unit tests, database integration tests, build, and a secret scan; implementation may add these incrementally with the first code that needs them.
 - [ ] Commit scope follows `AGENTS.md`: one observable addition or decision, its focused verification, and matching docs.
 - [ ] Generated files, dependency changes, formatting-only changes, and behavior changes are separated when that separation improves reviewability.
-- [x] The untracked/ignored baseline is understood before the first code commit (`.neon` ignored, `.agent-logs/` preserved untracked).
+- [x] The untracked/ignored baseline is understood before the first code commit (`.neon` and `.env.local` ignored, `.agent-logs/` tracked and committed as assignment journal).
 
 ## Neon database and Auth
 
