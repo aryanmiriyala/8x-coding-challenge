@@ -77,6 +77,12 @@ After implementation:
 - confirm the slice is represented by small, reviewable commits and the working tree contains no forgotten slice files;
 - do not call a slice complete when required evidence is missing.
 
+### Push-to-main rule
+
+- Keep making small, verified local commits, but do not push `main` after each commit or minor documentation/configuration edit.
+- Push `main` only after a substantial, coherent batch is complete—for example, a finished discovery milestone or an end-to-end slice—with relevant checks run, documentation reconciled, and the exact outgoing commits reviewed.
+- If a batch is incomplete, leave its commits local and state that they have not been pushed. An explicit user request to push sooner is an exception; never force-push or hide known failures.
+
 ## Architecture guardrails
 
 These are current invariants; proposals to change them require explicit rationale:

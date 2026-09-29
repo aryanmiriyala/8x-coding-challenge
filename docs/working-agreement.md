@@ -82,6 +82,8 @@ Commit boundaries should usually follow observable progress: scaffold/configurat
 
 “Tiny” does not mean committing broken intermediate states or every edit. It means committing the smallest meaningful, verified increment. Failed or skipped checks are disclosed, and history is not rewritten without explicit agreement.
 
+Pushes to `main` follow a different cadence from commits: batch several small commits into a substantial, verified milestone or completed end-to-end slice before pushing. Review the outgoing range and reconcile documentation first. Leave incomplete batches local and disclose that status; an explicit request to push earlier is the exception.
+
 Decision record states:
 
 - `proposed` — being explored; code must not depend on it without acknowledging the risk.
