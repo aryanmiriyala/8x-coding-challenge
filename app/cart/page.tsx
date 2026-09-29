@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 import { prisma } from '@/lib/db/prisma';
 import { auth } from '@/lib/auth';
@@ -154,9 +155,9 @@ export default async function CartPage() {
             <div className="text-lg mb-4">
               Subtotal ({itemCount} item{itemCount !== 1 ? 's' : ''}): <span className="font-bold">${(subtotalMinor / 100).toFixed(2)}</span>
             </div>
-            <button className="w-full bg-[#ffd814] hover:bg-[#f7ca00] text-black rounded-full py-2 px-4 text-sm font-medium shadow-sm transition-colors">
+            <Button variant="amazon_yellow" className="w-full">
               Proceed to checkout
-            </button>
+            </Button>
           </div>
         </div>
       )}

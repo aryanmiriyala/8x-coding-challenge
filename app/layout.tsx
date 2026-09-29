@@ -4,6 +4,10 @@ import './globals.css';
 import { getCartItemCount, mergeGuestCart } from '@/lib/actions/cart';
 import { auth } from '@/lib/auth';
 import { cookies } from 'next/headers';
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: 'Aster Market',
@@ -27,7 +31,7 @@ export default async function RootLayout({
   const cartCount = await getCartItemCount();
 
   return (
-    <html lang="en">
+    <html lang="en" className={cn("font-sans", geist.variable)}>
       <body className="antialiased min-h-screen flex flex-col bg-canvas text-text">
         {/* Primary Header */}
         <header className="bg-brand-strong text-white">

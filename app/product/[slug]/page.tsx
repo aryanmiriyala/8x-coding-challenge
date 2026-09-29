@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
@@ -173,7 +174,7 @@ export default async function ProductPage({ params }: PageProps) {
                   }}>
                     <button type="submit" className="w-full bg-[#ffd814] hover:bg-[#f7ca00] text-black rounded-full py-2 px-4 text-sm font-medium shadow-sm transition-colors disabled:opacity-50" disabled={!isAvailable}>
                       Add to Cart
-                    </button>
+                    </Button>
                   </form>
                   <form action={async () => {
                     'use server';
@@ -183,7 +184,7 @@ export default async function ProductPage({ params }: PageProps) {
                   }}>
                     <button type="submit" className="w-full bg-[#ffa41c] hover:bg-[#fa8900] text-black rounded-full py-2 px-4 text-sm font-medium shadow-sm transition-colors disabled:opacity-50" disabled={!isAvailable}>
                       Buy Now
-                    </button>
+                    </Button>
                   </form>
                 </div>
 
@@ -199,9 +200,9 @@ export default async function ProductPage({ params }: PageProps) {
                 </div>
 
                 <div className="border-t border-gray-200 pt-3">
-                  <button className="w-full bg-white hover:bg-gray-50 border border-gray-300 text-black rounded px-4 py-1.5 text-sm font-medium shadow-sm transition-colors">
+                  <Button variant="outline" className="w-full text-black font-medium transition-colors">
                     Add to List
-                  </button>
+                  </Button>
                 </div>
               </>
             ) : (
