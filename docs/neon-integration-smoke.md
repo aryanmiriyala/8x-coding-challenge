@@ -1,6 +1,6 @@
 # Neon/Vercel Integration Smoke Check
 
-Status: Partial; provider checks refreshed 2026-09-29
+Status: Partial; provider checks refreshed 2026-09-29 after local/dev cleanup
 Scope: Existing Neon Free project `8x-amazon-clone` and personal Vercel Hobby project `8x-coding-challenge` only
 
 ## Results
@@ -8,30 +8,28 @@ Scope: Existing Neon Free project `8x-amazon-clone` and personal Vercel Hobby pr
 | Check | Evidence | Result |
 | --- | --- | --- |
 | Exact project/branch | Neon CLI lists default `production` and a new `vercel-dev` branch | Pass; branch separation now exists |
-| Local pooled/direct URLs | Parsed ignored `.env.local` without printing values; pooled host has `-pooler`, direct host does not, but both still point at `production` | Pass for shape; fail for safe local development because local config still targets production |
+| Local pooled/direct URLs | Parsed ignored `.env.local` without printing values; pooled host has `-pooler`, direct host does not, and both now target the `vercel-dev` endpoint | Pass for local development branch targeting |
 | Database connectivity | `neon inspect db table-sizes --project-id ... --branch production --role-name neondb_owner` returned only managed `neon_auth` table sizes | Pass, read-only; no app schema exists |
 | Managed Auth | `neon neon-auth status` reports `better_auth`; configured JWKS endpoint returned HTTP 200 and one public key | Pass for provider reachability; sign-up/session flow not yet tested |
-| Managed Auth on `vercel-dev` | `neon neon-auth status --branch vercel-dev` reported Auth is not configured for this branch | Fail for branch-complete dev/preview Auth |
+| Managed Auth on `vercel-dev` | Empty cloned `neon_auth` schema was dropped on `vercel-dev` only, then Managed Better Auth was provisioned with `auth_provider=better_auth`; status reports a branch Auth base URL and JWKS returned HTTP 200 with one key | Pass for provider reachability; sign-up/session flow not yet tested |
 | Optional Data API | `neon data-api get` reports active on `public` | Pass for status only; P0 does not use it |
 | Optional Data API on `vercel-dev` | `neon data-api get --branch vercel-dev --database neondb` reports active on `public` | Pass for status only; P0 does not use it |
-| Local Data API env | Parsed ignored `.env.local` without printing values; `NEON_DATA_API_URL` is set, but the host currently contains `neonauth` while CLI Data API endpoints contain `apirest` | Fail for env correctness; P0 still does not use the Data API |
-| Neon Object Storage | Created `catalog-assets` (`public_read`) and `private-uploads` (`private`) on `production` and `vercel-dev`; `neon buckets list` verified both branches | Pass for bucket provisioning; object upload/read not yet tested |
+| Local Data API env | Parsed ignored `.env.local` without printing values; `NEON_DATA_API_URL` now targets the `vercel-dev` `apirest` host | Pass for env correctness; P0 still does not use the Data API |
+| Neon Object Storage | Created `catalog-assets` (`public_read`) and `private-uploads` (`private`) on `production` and `vercel-dev`; `neon buckets list` verified both branches; local `vercel-dev` put/head/delete smoke passed for both buckets | Pass |
 | GitHub to Vercel | Deployment metadata references this repository's `main` | Pass for source linkage |
 | Vercel production deploy | Two listed deployments are `ERROR`; latest build says `No Next.js version detected` | Fail as an app smoke; expected while repository is documentation-only |
 | Neon database envs in Vercel | `vercel env ls` lists `DATABASE_URL` and `DATABASE_URL_UNPOOLED` for Development and Production; temp env pulls show Development targets `ep-cool-shape...` and Production targets `ep-autumn-rain...` | Pass for database env injection and branch targeting |
-| Neon Auth/storage envs in Vercel | Temp Vercel env pulls show no `NEON_AUTH_BASE_URL`, `NEON_AUTH_URL`, `AWS_ENDPOINT_URL_S3`, or `NEON_DATA_API_URL` in Development or Production | Fail for Auth/storage runtime configuration |
+| Neon Auth/storage envs in Vercel | Earlier temp Vercel env pulls showed database URLs only. Local/dev credentials were later rotated, so Vercel Development database envs likely need refresh before any healthy app deployment | Fail for deployed runtime configuration |
 | Vercel marketplace installation list | `vercel integration installations --scope aryans-projects-4cd8154d` reports no marketplace installations | Observation only; database env injection exists despite no marketplace installation being listed |
 
-No database rows/schema, Auth users, provider links, Vercel settings, or deployments were created or changed by these checks. The only provider mutation was explicit owner-requested Neon Object Storage bucket creation on the verified existing project/branches. The ignored local file was read only. Test output intentionally excludes credentials and full connection strings.
+No app schema, Auth users, provider links, Vercel settings, or deployments were created or changed by these checks. Provider mutations were limited to the verified existing Neon project/branches: Object Storage bucket creation, `vercel-dev` Auth provisioning, removing the empty cloned `neon_auth` schema on `vercel-dev`, and rotating the `vercel-dev` owner-role password after a dev connection string was exposed in tool output. The ignored local file was updated without committing secret values. Test output intentionally excludes current credentials and full connection strings.
 
 ## Next flexible gate
 
-1. Decide whether `vercel-dev` is the local/preview development branch. If yes, update local ignored env values to target it before any write, without overwriting owner-provided secrets blindly.
-2. Configure Neon Auth for the branch that will run local/preview auth, then expose the branch-specific Auth base URL to local and Vercel environments.
-3. Add a distinct 256-bit `NEON_AUTH_COOKIE_SECRET` per environment in local/Vercel secret storage; do not reuse the production value.
-4. If the Data API becomes an active experiment, correct `NEON_DATA_API_URL` to the branch `apirest` URL first; otherwise leave it unused.
-5. Leave Object Storage object writes deferred unless the first slice needs runtime files. If it becomes active, inject branch-specific storage envs into local/Vercel and test upload/read/delete on the intended branch.
-6. After the owner authorizes Slice 0 and an application skeleton exists, run a healthy preview build, database-readiness check, Neon Auth lifecycle test, and branch-isolation test. The current documentation-only Vercel deployment cannot prove runtime integration.
+1. Get explicit approval to rotate the exposed production owner-role password and refresh Vercel Production/Development database envs. A broad bundled update was blocked by the execution policy, so this needs a separate confirmed action.
+2. Add/refresh Vercel Auth/storage/Data API/cookie-secret envs after the production-rotation decision. Local `vercel-dev` env is ready; deployed runtime env is not.
+3. Register the deployed origins as trusted Neon Auth domains once the app URLs exist.
+4. After the owner authorizes Slice 0 and an application skeleton exists, run a healthy preview build, database-readiness check, Neon Auth lifecycle test, and branch-isolation test. The current documentation-only Vercel deployment cannot prove runtime integration.
 
 ## Guidance
 

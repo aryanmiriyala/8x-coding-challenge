@@ -28,13 +28,13 @@ This checklist makes hidden setup work visible before product code begins. It is
 - [x] The owner enabled Neon Auth on the selected Neon project.
 - [ ] Confirm the project is in an Auth-supported AWS region and does not combine Managed Auth with incompatible IP Allow or Private Networking settings.
 - [x] Choose/create an isolated development branch on the existing Neon Free project. `vercel-dev` now exists and Vercel Development database URLs target it.
-- [ ] Link local tooling/env to the isolated development branch without overwriting secrets. The current local URLs still target `production` and must not be used for dev writes.
-- [ ] Pull/store `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, and `NEON_AUTH_BASE_URL` in ignored local or Vercel-managed environment storage.
+- [x] Link local tooling/env to the isolated development branch without overwriting committed files. The ignored local env now targets `vercel-dev`.
+- [x] Pull/store `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, and `NEON_AUTH_BASE_URL` in ignored local environment storage for `vercel-dev`.
 - [x] Generate a 256-bit `NEON_AUTH_COOKIE_SECRET` in the ignored local environment; still generate a distinct value for each deployed environment and never commit one.
-- [ ] Treat `NEON_DATA_API_URL` as optional provider configuration; decide on a concrete Data API use case and row-level security model before calling it from a browser.
-- [x] Confirm pooled application and direct migration URLs address the same branch; current local URLs match the existing `production` endpoint, not an isolated development branch.
+- [x] Treat `NEON_DATA_API_URL` as optional provider configuration; local value is branch-correct but remains unused. Decide on a concrete Data API use case and row-level security model before calling it from a browser.
+- [x] Confirm pooled application and direct migration URLs address the same branch; current local URLs match `vercel-dev`.
 - [ ] Register the exact preview/public-demo origins with Neon Auth; keep login, recovery, callback, `/api/auth`, and static assets outside protected-route matchers.
-- [ ] Establish an isolated Neon development branch for local commerce and Managed Auth. The database branch exists; Managed Auth is not configured for `vercel-dev` yet. Automated tests use disposable branches. Encode this in test scripts when implementation begins.
+- [x] Establish an isolated Neon development branch for local commerce and Managed Auth. `vercel-dev` has Managed Auth configured. Automated tests still need disposable branches encoded in scripts when implementation begins.
 - [ ] Validate Managed Auth sign-up, verification, sign-in, sign-out, recovery, session restoration, and direct protected-operation denial.
 - [ ] Validate the managed-schema relationship strategy before adding app-owned foreign keys to `neon_auth.user`.
 
@@ -42,7 +42,7 @@ This checklist makes hidden setup work visible before product code begins. It is
 
 - [x] GitHub `main` is linked to the existing Vercel Hobby project, verified from deployment metadata. The current deployments fail because no app scaffold exists; no healthy deployment is claimed.
 - [x] Connect the Vercel Hobby project to the existing Neon-owned Free project enough for database env injection; do not provision a second Vercel-managed Neon resource.
-- [ ] Confirm Neon-injected variable names and branch targets by inspection. Database variables are verified; Auth/storage variables are still missing from Vercel envs.
+- [ ] Confirm Neon-injected variable names and branch targets by inspection. Local env is verified; Vercel envs need refresh after dev credential rotation and before deployment.
 - [ ] Define Local, Test, Preview, and Public Demo environment boundaries; Preview and Demo must not share data, auth sessions, or secrets.
 - [ ] Confirm Node/Next.js runtime, database pooling, build output, secure cookies, trusted origins, health checks, logs, rollback, and spending controls in a minimal preview.
 - [ ] Establish one controlled migration step using the direct URL; do not run migrations concurrently at application startup.
@@ -55,7 +55,7 @@ This checklist makes hidden setup work visible before product code begins. It is
 - [ ] Defer Resend or another application-mail provider until an order/customer message actually exists.
 - [ ] Keep seeded catalog imagery in app static assets for the first slice. If an active slice adds runtime-managed files, use the selected Neon Object Storage; check region, access mode, CDN, cost, and branch isolation before provisioning.
 - [x] Create minimal Neon Object Storage buckets on the intended project branches: `catalog-assets` is `public_read`, and `private-uploads` is `private` on both `production` and `vercel-dev`.
-- [ ] Before using Object Storage from the app, confirm local/Vercel storage envs target the same branch as the database and run an upload/read/delete smoke test against the active branch.
+- [x] Before using Object Storage locally, confirm storage envs target the same branch as the database and run an upload/read/delete smoke test against the active branch. Vercel storage env refresh remains open before deployment.
 - [ ] Do not create Redis, queues, search services, analytics platforms, or Neon Functions unless an active slice demonstrates the need.
 
 ## Data, assets, and UX evidence
